@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pinyin Exercise using an Interactive Table with Toggleable Columns and Validation</title>
+  <!-- 拼音符號
+        ā á ǎ à a
+        ē é ě è e
+        ī í ǐ ì ı
+        ō ó ǒ ò o
+        ū ú ǔ ù u
+        ǖ ǘ ǚ ǜ ü
+  -->
+  <style>
+    /* Basic table styling */
+    table {
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th {
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+
+    td {
+      text-align: left;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      vertical-align: middle;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Audio cell styling */
+    .audio-cell {
+      min-width: 300px;
+      max-width: 350px;
+    }
+
+    /* Input cell styling */
+    .input-cell {
+      min-width: 300px;
+      max-width: 350px;
+      padding: 0;
+      height: 40px;
+    }
+
+    /* Time cell styling */
+    .time-cell {
+      min-width: 80px;
+      max-width: 100px;
+    }
+
+    /* Wrapper for input and pinyin */
+    .input-pinyin-wrapper {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Input field styling */
+    .text-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: transparent;
+      color: transparent;
+      caret-color: black;
+      font-family: monospace;
+      font-size: 16px;
+      line-height: 40px;
+      padding: 0 5px;
+      border: 1px solid #ccc;
+      width: 100%;
+      height: 40px;
+      box-sizing: border-box;
+      z-index: 2;
+    }
+
+    /* Pinyin display styling */
+    .pinyin-display {
+      font-family: monospace;
+      font-size: 14px;
+      color: #666;
+      padding: 2px 5px;
+      background-color: #f9f9f9;
+      border-radius: 3px;
+      margin-top: 40px;
+      display: none;
+    }
+
+    /* Pinyin display when visible */
+    .pinyin-display[style*="display: block"] {
+      margin-top: 2px;
+    }
+
+    th.pinyinHeader, td.pinyinData {
+	  min-width: 150px;
+	  max-width: 250px
+    }
+
+    /* Wrapper for input and overlay */
+    .input-wrapper {
+      position: relative;
+      display: inline-block; /* Maintain alignment within the table cell */
+      width: 100%;
+      vertical-align: middle; /* Vertically align wrapper */
+      height: 40px; /* Explicit height to match input and overlay */
+      box-sizing: border-box; /* Include padding in size calculations */
+    }
+
+    /* Overlay styling */
+    .highlight-overlay {
+      position: absolute; /* Position overlay relative to wrapper */
+      top: 0; /* Align overlay with wrapper */
+      left: 0;
+      white-space: pre; /* Preserve spacing */
+      font-family: monospace; /* Use fixed-width font for better alignment */
+      font-size: 16px; /* Match input font size */
+      line-height: 40px; /* Match wrapper height */
+      color: black; /* Default unmatched text color */
+      pointer-events: none; /* Allow clicks to pass through */
+      z-index: 1;
+      padding: 0 5px; /* Match input padding for horizontal spacing */
+    }
+
+    /* Highlight matched characters */
+    .highlight {
+      color: blue; /* Highlight matched text with blue */
+      font-weight: bold; /* Bold the matched characters */
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    /* High contrast indicators */
+    [data-status="correct"]::after {
+      content: "✓";
+      position: absolute;
+      right: 5px;
+    }
+
+    [data-status="incorrect"]::after {
+      content: "✗";
+      position: absolute;
+      right: 5px;
+    }
+
+    [data-status="partial"]::after {
+      content: "~";
+      position: absolute;
+      right: 5px;
+    }
+
+    /* Add new style for input cell */
+    .input-field-column {
+      min-width: 300px; /* Increased width to accommodate 45 characters */
+      max-width: 400px;
+    }
+
+    /* Timer control styling */
+    .timer-controls {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .pause-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .pause-button:hover {
+      background-color: #45a049;
+    }
+
+    .pause-button.paused {
+      background-color: #ff9800;
+    }
+
+    .pause-button.paused:hover {
+      background-color: #f57c00;
+    }
+	
+    .start-button {
+      background-color: #2196F3;
+    }
+
+    .start-button:hover {
+      background-color: #1976D2;
+    }
+
+  </style>
+
+  <script>
+    const matchList = ["zh", "ch", "sh", "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "w", "x", "y", "z"];
+    const delimiters = /[\s,:;.&+\-\\\[\]\(\)\{\}\|\/]+/;
+    //中文三上 單元一 
+    const groupDetails = [
+      { groupId: 311, description: "1.五個新書包" },
+      { groupId: 312, description: "2.學寫毛筆字" },
+    ];
+
+	
+    // List of items with each id as a Chinese word for inputting the corresponding pinyin.
+    const itemSoundBaseURL = "file:///F:/yangre/Willanson/St%20Paul%27s%20Co-ed/P3/%E4%B8%AD%E6%96%87/mp3/";
+    const items = [
+      //五個新書包
+      { id: "奔", groupId: 311, soundPath: "奔.mp3", inputPinyin: "be1n", pinyin: "bēn" },
+      { id: "壞", groupId: 311, soundPath: "壞.mp3", inputPinyin: "hua4i", pinyin: "huài" },
+      { id: "覺得", groupId: 311, soundPath: "覺得.mp3", inputPinyin: "jue3 de", pinyin: "juě de" },
+      { id: "沮喪", groupId: 311, soundPath: "沮喪.mp3", inputPinyin: "ju3 sa4ng", pinyin: "jǔ sàng" },
+      { id: "開學", groupId: 311, soundPath: "開學.mp3", inputPinyin: "ka1i xue2", pinyin: "kāi xué" },
+      { id: "快活", groupId: 311, soundPath: "快活.mp3", inputPinyin: "kua4i huo", pinyin: "kuài huo" },
+      { id: "留下", groupId: 311, soundPath: "留下.mp3", inputPinyin: "liu2 xia4", pinyin: "liú xıà" },
+      { id: "弄錯", groupId: 311, soundPath: "弄錯.mp3", inputPinyin: "no4ng cuo4", pinyin: "nòng cuò" },
+      { id: "絲線", groupId: 311, soundPath: "絲線.mp3", inputPinyin: "si1 xia4n", pinyin: "sī xiàn" },
+	  { id: "同意", groupId: 311, soundPath: "同意.mp3", inputPinyin: "to2ng yi4", pinyin: "tóng yì" },
+	  { id: "星期", groupId: 311, soundPath: "星期.mp3", inputPinyin: "xi1ng qi1", pinyin: "xīng qī" },
+      { id: "於是", groupId: 311, soundPath: "於是.mp3", inputPinyin: "yu2 shi4", pinyin: "yǘ shì" },
+      { id: "早晨", groupId: 311, soundPath: "早晨.mp3", inputPinyin: "za3o chen", pinyin: "zǎo chen" },
+      { id: "鑽進", groupId: 311, soundPath: "鑽進.mp3", inputPinyin: "zua1n ji4n", pinyin: "zuān jìn" },
+      //學寫毛筆字
+      { id: "毛筆", groupId: 312, soundPath: "毛筆.mp3", inputPinyin: "ma2o bi3", pinyin: "máo bǐ" },
+      { id: "書法", groupId: 312, soundPath: "書法.mp3", inputPinyin: "shu1 fa3", pinyin: "shū fǎ" },
+      { id: "正好", groupId: 312, soundPath: "正好.mp3", inputPinyin: "zhe4ng ha3o", pinyin: "zhèng hǎo" },
+      { id: "將軍", groupId: 312, soundPath: "將軍.mp3", inputPinyin: "jia1ng ju1n", pinyin: "jiāng jūn" },
+      { id: "春聯", groupId: 312, soundPath: "春聯.mp3", inputPinyin: "chu1n lia2n", pinyin: "chūn lián" },
+      { id: "有趣", groupId: 312, soundPath: "有趣.mp3", inputPinyin: "yo3u qu4", pinyin: "yǒu qù" },
+      { id: "撇", groupId: 312, soundPath: "撇.mp3", inputPinyin: "pie3", pinyin: "piě" },
+      { id: "弧線", groupId: 312, soundPath: "弧線.mp3", inputPinyin: "hu2 xia4n", pinyin: "hú xiàn" },
+      { id: "態度", groupId: 312, soundPath: "態度.mp3", inputPinyin: "ta4i du4", pinyin: "tài dù" },
+      { id: "巧", groupId: 312, soundPath: "巧.mp3", inputPinyin: "qia3o", pinyin: "qiǎo" },
+      { id: "悠閒", groupId: 312, soundPath: "悠閒.mp3", inputPinyin: "yo1u xia2n", pinyin: "yōu xián" },
+      { id: "緊張", groupId: 312, soundPath: "緊張.mp3", inputPinyin: "ji3n zha1ng", pinyin: "jǐn zhāng" },
+      { id: "感動", groupId: 312, soundPath: "感動.mp3", inputPinyin: "ga3n do4ng", pinyin: "gǎn dòng" },
+      { id: "專心", groupId: 312, soundPath: "專心.mp3", inputPinyin: "zhua1n xi1n", pinyin: "zhuān xīn" },
+      { id: "認真", groupId: 312, soundPath: "認真.mp3", inputPinyin: "re4n zhe1n", pinyin: "rèn zhēn" },
+      { id: "趕忙", groupId: 312, soundPath: "趕忙.mp3", inputPinyin: "ga3n ma2ng", pinyin: "gǎn máng" },
+      { id: "抹", groupId: 312, soundPath: "抹.mp3", inputPinyin: "mo3", pinyin: "mǒ" },
+      { id: "恭喜", groupId: 312, soundPath: "恭喜.mp3", inputPinyin: "go1ng xi3", pinyin: "gōng xǐ" },
+      { id: "煩惱", groupId: 312, soundPath: "煩惱.mp3", inputPinyin: "fa2n na3o", pinyin: "fán nǎo" },
+      { id: "三顧草廬", groupId: 312, soundPath: "三顧草廬.mp3", inputPinyin: "sa1n gu4 ca3o lu2", pinyin: "sān gù cǎo lú" },
+      { id: "一諾千金", groupId: 312, soundPath: "一諾千金.mp3", inputPinyin: "yi2 nuo4 qia1n ji1n", pinyin: "yí nuò qiān jīn" },
+      { id: "千鈞一髮", groupId: 312, soundPath: "千鈞一髮.mp3", inputPinyin: "qia1n ju1n yi2 fa4", pinyin: "qiān jūn yí fà" },
+      { id: "一落千丈", groupId: 312, soundPath: "一落千丈.mp3", inputPinyin: "yi2 luo4 qia1n zha4ng", pinyin: "yí luò qiān zhàng" },
+      { id: "三思而行", groupId: 312, soundPath: "三思而行.mp3", inputPinyin: "sa1n si1 e2r xi2ng", pinyin: "sān sī ér xíng" },
+      { id: "千絲萬縷", groupId: 312, soundPath: "千絲萬縷.mp3", inputPinyin: "qia1n si1 wa4n lv3", pinyin: "qiān sī wàn lǚ" },
+      { id: "一絲不苟", groupId: 312, soundPath: "一絲不苟.mp3", inputPinyin: "yi4 si1 bu4 go3u", pinyin: "yì sī bù gǒu" },
+    ];
+	
+    let allGroupsSelected = false; // State to track toggle status
+
+    let isIdColumnVisible = false; // State to track ID column visibility
+
+    let challengingItems = []; // List of marked "challenging" item IDs
+
+    let timerInterval;
+    let startTime;
+    let elapsedTime = 0;
+    let rowTimers = {}; // Track individual row completion times
+    let lastCompletionTime = null; // Track the last row completion time
+
+    // Pause functionality variables
+    let isPaused = false;
+    let pauseStartTime = 0;
+    let totalPauseTime = 0;
+    let rowPauseStartTimes = {}; // Track when pause started for each row being worked on
+    let rowPauseThisLap = {}; // itemId -> ms of pause time in the current lap
+
+    // --- Added for precise per-row pause tracking ---
+    let activeRows = {};                 // itemId -> currently being worked on (typed but not finished)
+    let rowPauseAccum = {};              // itemId -> total pause ms while that row was active
+    let rowPauseAccumBaseline = {};      // itemId -> snapshot of rowPauseAccum at the start of the current lap
+    let rowLapIndexBaseline = {};        // itemId -> lap index when baseline was captured
+    let lapIndex = 0;                    // increments every time a row is completed (laps)
+
+    // Constants for column indices
+    const COLUMNS = {
+      ACTION: 0,
+      ID: 1,
+      AUDIO: 2,
+      INPUT: 3,
+      TIME: 4,
+      CHECKBOX: 5,
+      PINYIN: 6
+    };
+
+    // Function to format time as MM:SS
+    function formatTime(ms) {
+      if (isNaN(ms) || ms < 0) return "00:00";
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function startExercise() {
+      // Reset and start timer
+      resetTimer();
+      startTimer();
+
+      // Enable pause button, disable start button
+      document.getElementById('pauseButton').disabled = false;
+      document.getElementById('startButton').disabled = true;
+    }
+
+    // Function to start the timer
+    function startTimer() {
+      startTime = Date.now() - elapsedTime - totalPauseTime;
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          elapsedTime = Date.now() - startTime - totalPauseTime;
+          document.getElementById('timerDisplay').textContent = formatTime(elapsedTime);
+        }
+      }, 1000);
+    }
+
+    // Function to stop the timer
+    function stopTimer() {
+      if (timerInterval) {
+        console.log('Stopping timer...');
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    // Function to reset the timer
+    function resetTimer() {
+      stopTimer();
+      elapsedTime = 0;
+      totalPauseTime = 0;
+      isPaused = false;
+      rowPauseStartTimes = {};
+      // Reset per-row pause tracking
+      activeRows = {};
+      rowPauseAccum = {};
+      rowPauseAccumBaseline = {};
+      rowLapIndexBaseline = {};
+      lapIndex = 0;
+      document.getElementById('timerDisplay').textContent = formatTime(0);
+      updatePauseButton();
+    }
+
+    // Function to pause/resume the timer (patched for per-row pause attribution)
+    function togglePause() {
+      if (isPaused) {
+        // Resume
+        isPaused = false;
+        const resumeTime = Date.now();
+        const pauseDuration = resumeTime - pauseStartTime;
+        totalPauseTime += pauseDuration;
+
+        // Attribute this pause only to rows that were active when pause began
+        Object.keys(rowPauseStartTimes).forEach(itemId => {
+          const start = rowPauseStartTimes[itemId];
+          const dur = resumeTime - start;
+          // Add this pause duration to current lap's pause total for that row
+          rowPauseThisLap[itemId] = (rowPauseThisLap[itemId] || 0) + dur;
+        });
+
+        rowPauseStartTimes = {};
+        startTimer();
+      } else {
+        // Pause
+        isPaused = true;
+        pauseStartTime = Date.now();
+        stopTimer();
+    
+        // Record pause start time ONLY for rows that are currently being worked on (active)
+        rowPauseStartTimes = {};
+        Object.keys(activeRows).forEach(itemId => {
+          if (!rowTimers[itemId]) { // only incomplete rows
+            rowPauseStartTimes[itemId] = pauseStartTime;
+          }
+        });
+      }
+
+      updatePauseButton();
+    }
+
+    // Function to update the pause button appearance
+    function updatePauseButton() {
+      const pauseButton = document.getElementById('pauseButton');
+      if (pauseButton) {
+        if (isPaused) {
+          pauseButton.textContent = '繼續';
+          pauseButton.classList.add('paused');
+        } else {
+          pauseButton.textContent = '暫停';
+          pauseButton.classList.remove('paused');
+        }
+      }
+    }
+
+    // Function to display error messages to the user
+    function showErrorUI(message) {
+      // Remove any existing error message
+      const existingError = document.getElementById('error-message');
+      if (existingError) {
+        existingError.remove();
+      }
+
+      // Create error message element
+      const errorDiv = document.createElement('div');
+      errorDiv.id = 'error-message';
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '20px';
+      errorDiv.style.left = '50%';
+      errorDiv.style.transform = 'translateX(-50%)';
+      errorDiv.style.backgroundColor = 'red';
+      errorDiv.style.color = 'white';
+      errorDiv.style.padding = '10px 20px';
+      errorDiv.style.borderRadius = '5px';
+      errorDiv.style.zIndex = '1000';
+      errorDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+      errorDiv.textContent = message;
+
+      // Add to document
+      document.body.appendChild(errorDiv);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 5000);
+    }
+
+    // Function to sync file input values
+    function syncFileInputs(sourceId, targetId) {
+      const sourceElement = document.getElementById(sourceId);
+      const targetElement = document.getElementById(targetId);
+      if (sourceElement && targetElement) {
+        targetElement.value = sourceElement.value;
+      }
+    }
+
+    // Initialize table on page load
+    window.onload = () => {
+      const groupSelect = document.getElementById("groupSelect");
+      // Populate the dropdown with group descriptions
+      groupDetails.forEach(group => {
+        const option = document.createElement("option");
+        option.value = group.groupId;
+        option.textContent = group.description;
+        groupSelect.appendChild(option);
+      });
+
+      selectLastOption(); // Select the last option by default
+
+      // Set the button label initially
+      const toggleButton = document.getElementById("toggleGroupSelectButton");
+      toggleButton.textContent = "課題全選"; // Initial label
+
+      // Add event listeners for file input sync
+      const input1 = document.getElementById('fileToSaveRevisionItems1');
+      const input2 = document.getElementById('fileToSaveRevisionItems2');
+      
+      if (input1) {
+        input1.addEventListener('input', () => syncFileInputs('fileToSaveRevisionItems1', 'fileToSaveRevisionItems2'));
+      }
+      
+      if (input2) {
+        input2.addEventListener('input', () => syncFileInputs('fileToSaveRevisionItems2', 'fileToSaveRevisionItems1'));
+      }
+
+      // Initialize pause button state
+      updatePauseButton();
+    };
+
+    // Function to handle file operations with error handling and loading indicators
+    function handleFileOperation(operation, params = {}) {
+      const loadingIndicator = document.createElement('span');
+      loadingIndicator.textContent = `${operation === 'save' ? 'Saving' : 'Loading'}...`;
+      
+      try {
+        if (operation === 'save') {
+          document.body.appendChild(loadingIndicator);
+          const { filename, syncFilename } = params;
+          localStorage.setItem('challengingItems', JSON.stringify(challengingItems));
+          
+          const blob = new Blob([JSON.stringify(challengingItems)], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.click();
+          
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            loadingIndicator.remove();
+            if (syncFilename) {
+              document.getElementById(syncFilename).value = filename;
+            }
+          }, 100);
+        } else if (operation === 'load') {
+          const { file } = params;
+          if (!file) {
+            // No file selected - just return silently
+            return;
+          }
+          
+          if (!file.name.endsWith('.txt')) {
+            showErrorUI('請選擇 .txt 檔案');
+            return;
+          }
+
+          document.body.appendChild(loadingIndicator);
+          const reader = new FileReader();
+          
+          reader.onload = function(e) {
+            try {
+              const content = e.target.result;
+              // Validate JSON format
+              const parsedContent = JSON.parse(content);
+              // Validate that it's an array
+              if (!Array.isArray(parsedContent)) {
+                throw new Error('檔案格式無效 - 應為字詞列表');
+              }
+              challengingItems = parsedContent;
+              updateCheckboxes();
+              loadingIndicator.remove();
+            } catch (error) {
+              loadingIndicator.remove();
+              showErrorUI('檔案格式無效: ' + error.message);
+            }
+          };
+
+          reader.onerror = function() {
+            loadingIndicator.remove();
+            showErrorUI('讀取檔案時發生錯誤');
+          };
+
+          reader.readAsText(file);
+        }
+      } catch (error) {
+        loadingIndicator.remove();
+        console.error(`Failed to ${operation} file:`, error);
+        showErrorUI(`${operation === 'save' ? '儲存' : '讀取'}檔案時發生錯誤: ${error.message}`);
+      }
+    }
+
+    // Updated save function
+    function saveChallengingItemsToFile(filenameElementID, toSyncFileElementID) {
+      const filename = document.getElementById(filenameElementID)?.value || 'pinyinRevisionItems.txt';
+      handleFileOperation('save', { filename, syncFilename: toSyncFileElementID });
+    }
+
+    // Updated load function
+    function loadChallengingItemsFromFile(event) {
+      if (!checkBrowserCompatibility()) return;
+      handleFileOperation('load', { file: event.target.files[0] });
+    }
+
+    // Function to update checkboxes in the table based on challenging items
+    function updateCheckboxes() {
+      const table = document.getElementById("dynamicTable");
+      const rows = table.rows;
+      for (let i = 0; i < rows.length; i++) {
+        const checkbox = rows[i].cells[2]?.querySelector("input[type='checkbox']");
+        if (checkbox) {
+          checkbox.checked = challengingItems.includes(rows[i].cells[0].textContent);
+        }
+      }
+    }
+
+    // Function to handle checkbox toggle for marking "challenging"
+    function toggleChallengingItem(itemId, isChecked) {
+      if (isChecked) {
+        if (!challengingItems.includes(itemId)) {
+          challengingItems.push(itemId);
+        }
+      } else {
+        challengingItems = challengingItems.filter(id => id !== itemId);
+      }
+    }
+
+    // Function to create an audio cell
+    function setAudioSource(item) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      
+      // Add ARIA label for accessibility
+      audio.setAttribute('aria-label', `Audio for ${item.id}`);
+      
+      const mp3Folder = "mp3/";
+      const mp3File = mp3Folder + item.id + ".mp3";
+      
+      // Set source and error handling
+      audio.src = mp3File;
+      
+      audio.onerror = () => {
+        console.log(`Local file not found for ${item.id}, using remote source`);
+        audio.src = /^(https?|file):\/\//.test(item.soundPath)?item.soundPath:itemSoundBaseURL+item.soundPath;
+      };
+
+      audio.onloadeddata = () => {
+        console.log(`Using local file for ${item.id}`);
+      };  
+      
+      return audio;
+    }
+
+    // Shared logic for formatting text with highlights for 聲母
+    function formatTextWithHighlights(text) {
+      let result = "";
+      let remainingText = text;
+      let afterDelimiter = true;
+
+      while (remainingText.length > 0) {
+        const delimiterMatch = remainingText.match(delimiters);
+        if (delimiterMatch && delimiterMatch.index === 0) {
+          result += remainingText[0];
+          remainingText = remainingText.slice(1);
+          afterDelimiter = true;
+          continue;
+        }
+
+        if (afterDelimiter) {
+          const regex = new RegExp(`^(${matchList.join('|')})`, 'i');
+          const match = remainingText.match(regex);
+
+          if (match) {
+            result += `<span class="highlight">${match[0]}</span>`;
+            remainingText = remainingText.slice(match[0].length);
+            afterDelimiter = false;
+            continue;
+          }
+        }
+
+        result += remainingText[0];
+        remainingText = remainingText.slice(1);
+        afterDelimiter = false;
+      }
+
+      return result;
+    }
+
+    // Function to toggle group selection and update button label
+    function toggleGroupSelection() {
+      const groupSelect = document.getElementById("groupSelect");
+      const toggleGroupSelectButton = document.getElementById("toggleGroupSelectButton");
+      allGroupsSelected = !allGroupsSelected; // Toggle state
+      Array.from(groupSelect.options).forEach(option => {
+        option.selected = allGroupsSelected; // Update selection state
+      });
+      toggleGroupSelectButton.textContent = allGroupsSelected ? "清除所有選擇" : "課題全選"; // Update button label
+    }
+
+    // Function to create table cells with common styling
+    function createTableCell(content, className = '', style = {}) {
+      const cell = document.createElement('td');
+      if (className) cell.className = className;
+      Object.assign(cell.style, style);
+      if (typeof content === 'string') {
+        cell.innerHTML = content; // Changed from textContent to innerHTML
+      } else {
+        cell.appendChild(content);
+      }
+      return cell;
+    }
+
+    // Function to create input field with overlay
+    function createInputField(item, index) {
+      const inputWrapper = document.createElement("div");
+      inputWrapper.className = "input-wrapper";
+
+      const inputOverlay = document.createElement("div");
+      inputOverlay.className = "highlight-overlay";
+      inputOverlay.id = `input-overlay-${index}`;
+
+      const inputField = document.createElement("input");
+      inputField.type = "text";
+      inputField.className = "text-input";
+      inputField.value = "";
+      
+      // Consolidate input event listeners
+      const handleInput = debounce(() => {
+        validateInput(inputField, item.inputPinyin, item.pinyin);
+        checkWinCondition();
+        inputOverlay.innerHTML = formatTextWithHighlights(inputField.value);
+      }, 300);
+      
+      inputField.addEventListener("input", handleInput);
+      inputWrapper.appendChild(inputOverlay);
+      inputWrapper.appendChild(inputField);
+      
+      return inputWrapper;
+    }
+
+    // Function to create table header
+    function createTableHeader() {
+      const headerRow = document.createElement('tr');
+      const headers = [
+        { text: "Action", className: "" },
+        { text: "詞語", className: "idColumn", style: { display: isIdColumnVisible ? "table-cell" : "none" } },
+        { text: "讀音", className: "audio-cell" },
+        { text: "輸入拼音", className: "input-cell" },
+        { text: "完成時間", className: "time-cell" },
+        { text: "重溫", className: "" }
+      ];
+
+      headers.forEach(header => {
+        const cell = document.createElement("th");
+        cell.textContent = header.text;
+        if (header.className) cell.className = header.className;
+        if (header.style) Object.assign(cell.style, header.style);
+        headerRow.appendChild(cell);
+      });
+
+      return headerRow;
+    }
+
+    // Function to create table row
+    function createTableRow(item, index) {
+      const row = document.createElement('tr');
+      
+      // Button cell
+      row.appendChild(createTableCell(createToggleButton(item, index)));
+      
+      // ID cell
+      row.appendChild(createTableCell(formatIdWithStyledText(item.id), "idColumn", 
+        { display: isIdColumnVisible ? "table-cell" : "none" }));
+      
+      // Audio cell
+      row.appendChild(createTableCell(setAudioSource(item), "audio-cell"));
+      
+      // Input cell with pinyin
+      const inputWrapper = document.createElement("div");
+      inputWrapper.className = "input-pinyin-wrapper";
+      
+      const inputField = createInputField(item, index);
+      inputWrapper.appendChild(inputField);
+      
+      const pinyinDisplay = document.createElement("div");
+      pinyinDisplay.className = "pinyin-display";
+      pinyinDisplay.id = item.id;
+      pinyinDisplay.style.display = "none";
+      pinyinDisplay.innerHTML = formatTextWithHighlights(item.pinyin);
+      inputWrapper.appendChild(pinyinDisplay);
+      
+      row.appendChild(createTableCell(inputWrapper, "input-cell"));
+      
+      // Time cell
+      const timeCell = createTableCell("", "time-cell");
+      timeCell.id = `time-${item.id}`;
+      row.appendChild(timeCell);
+      
+      // Checkbox cell
+      row.appendChild(createTableCell(createCheckbox(item)));
+      
+      return row;
+    }
+
+    // Function to validate row count input
+    function validateRowCount(count, maxAvailable) {
+      // If empty or null, return null to indicate "all items"
+      if (!count || count.trim() === '') {
+        return null;
+      }
+
+      // Remove whitespace
+      const trimmedCount = count.trim();
+      
+      // Check if the input contains a decimal point
+      if (trimmedCount.includes('.')) {
+        const num = parseFloat(trimmedCount);
+        // Allow only if it's effectively a whole number (e.g., "2.0")
+        if (num !== Math.floor(num)) {
+          showErrorUI('請輸入有效的數字');
+          return false;
+        }
+      }
+
+      // Check if the input is a valid number
+      const num = parseInt(trimmedCount, 10);
+      if (isNaN(num) || !/^\d+\.?\d*$/.test(trimmedCount)) {
+        showErrorUI('請輸入有效的數字');
+        return false;
+      }
+      
+      // Check minimum
+      if (num < 1) {
+        showErrorUI('請輸入大於0的數字');
+        return false;
+      }
+
+      // Check maximum against available items
+      if (num > maxAvailable) {
+        showErrorUI(`可選詞語數量為${maxAvailable}, 請輸入較小的數字`);
+        return false;
+      }
+
+      return num;
+    }
+
+    // Function to generate table
+    function generateTable() {
+      try {
+        // Get selected items first
+        const selectedOptions = Array.from(document.getElementById("groupSelect").selectedOptions);
+        if (selectedOptions.length === 0) {
+          showErrorUI('請選擇至少一個課題');
+          return;
+        }
+
+        const selectedGroupIds = selectedOptions.map(option => parseInt(option.value));
+        const useChallengingList = document.getElementById("challengingCheckbox").checked;
+
+        // First filter by selected groups
+        let sourceItems = items.filter(item => selectedGroupIds.includes(item.groupId));
+        
+        // Then filter by challenging items if checkbox is checked
+        if (useChallengingList) {
+          sourceItems = sourceItems.filter(item => challengingItems.includes(item.id));
+          if (sourceItems.length === 0) {
+            showErrorUI('沒有需要重溫的詞語');
+            return;
+          }
+        }
+
+        // Validate row count
+        const rowCountInput = document.getElementById("rowCount").value;
+        const validatedRowCount = validateRowCount(rowCountInput, sourceItems.length);
+        
+        if (validatedRowCount === false) {
+          return; // Validation failed
+        }
+
+        // Now proceed with table generation
+        resetTimer();
+        // Enable Start button, disable Pause until started
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('pauseButton').disabled = true;
+        rowTimers = {};
+        lastCompletionTime = null;
+
+        isIdColumnVisible = document.getElementById("showIdColumnCheckbox").checked;
+
+        // Update the toggle button text based on checkbox state
+        const toggleButton = document.querySelector("button[onclick='toggleIdColumn()']");
+        if (toggleButton) {
+          toggleButton.textContent = isIdColumnVisible ? "隱藏詞語" : "顯示詞語";
+        }
+
+        const winBanner = document.getElementById("winBanner");
+        if (winBanner) {
+          winBanner.remove();
+        }
+
+        const table = document.getElementById("dynamicTable");
+        table.innerHTML = "";
+
+        // Add header
+        table.appendChild(createTableHeader());
+
+        const selectedItems = validatedRowCount ? randomPick(sourceItems, validatedRowCount) : sourceItems;
+
+        // Add rows
+        selectedItems.forEach((item, index) => {
+          table.appendChild(createTableRow(item, index));
+        });
+      } catch (error) {
+        console.error('Error generating table:', error);
+        showErrorUI('生成練習時發生錯誤。請重試。');
+      }
+    }
+
+    // Helper function to create toggle button
+    function createToggleButton(item, index) {
+      const button = document.createElement("button");
+      button.textContent = "顯示答案";
+      button.setAttribute("data-target", item.id);
+      button.setAttribute("data-row", index + 1);
+      button.setAttribute('aria-label', 'Toggle answer visibility');
+      button.setAttribute('role', 'button');
+      button.onclick = () => togglePinyin(button);
+      return button;
+    }
+
+    // Helper function to create checkbox
+    function createCheckbox(item) {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = challengingItems.includes(item.id);
+      checkbox.onchange = () => toggleChallengingItem(item.id, checkbox.checked);
+      return checkbox;
+    }
+
+    // Function to toggle the visibility of the pinyin
+    function togglePinyin(button) {
+      const targetId = button.getAttribute("data-target");
+      const pinyinDisplay = document.getElementById(targetId);
+
+      if (pinyinDisplay.style.display === "none") {
+        // Show answer
+        pinyinDisplay.style.display = "block";
+        button.textContent = `隱藏答案`;
+
+        // Also mark this word for revision (check "重溫")
+        const row = button.closest('tr');
+        if (row) {
+          const checkbox = row.querySelector("input[type='checkbox']");
+          if (checkbox) {
+            checkbox.checked = true;
+            toggleChallengingItem(targetId, true); // add to challengingItems
+          }
+        }
+
+      } else {
+        // Hide answer
+        pinyinDisplay.style.display = "none";
+        button.textContent = `顯示答案`;
+      }
+    }
+
+    // Function to format ID with styled text after '_'
+    function formatIdWithStyledText(id) {
+      if (id.includes("_")) {
+        const [main, styledText] = id.split("_");
+        return `${main}<span style="font-size: 75%;">${styledText}</span>`;
+      }
+      return id;
+    }
+
+    // Function to clean input (trim and replace multiple spaces with one)
+    function cleanInput(value) {
+      if (typeof value !== 'string') return '';
+      return value.trim().replace(/\s+/g, " ").toLowerCase();
+    }
+
+    // Function to remove numeric characters from a string
+    function removeNumbers(value) {
+      return value.replace(/\d+/g, ""); // Regex to remove all digits
+    }
+
+    // Function to update cell status with visual indicators
+    function updateCellStatus(cell, status) {
+      const colors = {
+        correct: "greenyellow",
+        partial: "yellow",
+        incorrect: "red"
+      };
+      
+      cell.style.backgroundColor = colors[status];
+      cell.setAttribute('data-status', status);
+      
+      // Update or create status indicator for accessibility
+      const statusIndicator = cell.querySelector('.status-indicator') || document.createElement('span');
+      statusIndicator.className = 'status-indicator visually-hidden';
+      statusIndicator.textContent = status;
+      cell.appendChild(statusIndicator);
+    }
+
+    // Function to sanitize input values
+    function sanitizeInput(value) {
+      if (typeof value !== 'string') return '';
+      return value
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase()
+        .replace(/[<>]/g, '') // Basic XSS prevention
+        ;
+    }
+
+    // Function to update completion time (patched to subtract only relevant pause time per row & lap)
+    function updateCompletionTime(itemId) {
+      if (!rowTimers[itemId]) {
+        const currentTime = Date.now();
+
+        // Raw lap duration: from session start (first lap) or last completion time
+        const rawLap = (lastCompletionTime === null)
+          ? (currentTime - startTime)
+          : (currentTime - lastCompletionTime);
+
+        // Subtract ONLY pauses that affected THIS row during THIS lap
+        const pauseThisLap = rowPauseThisLap[itemId] || 0;
+        let adjustedLap = rawLap - pauseThisLap;
+
+        if (adjustedLap < 0) adjustedLap = 0;
+
+        rowTimers[itemId] = adjustedLap;
+        delete rowPauseThisLap[itemId];
+        lastCompletionTime = currentTime;
+
+        // This row is no longer active
+        delete activeRows[itemId];
+        delete rowPauseStartTimes[itemId];
+
+        // Advance lap and reset baselines for rows still active
+        lapIndex += 1;
+        Object.keys(activeRows).forEach(id => {
+          rowPauseAccumBaseline[id] = rowPauseAccum[id] || 0;
+          rowLapIndexBaseline[id] = lapIndex;
+          rowPauseThisLap[id] = 0;
+        });
+
+        const timeCell = document.getElementById(`time-${itemId}`);
+        if (timeCell) {
+          timeCell.textContent = formatTime(rowTimers[itemId]);
+          // Visual feedback
+          timeCell.style.fontWeight = 'bold';
+          timeCell.style.color = '#0066cc';
+          setTimeout(() => {
+            timeCell.style.fontWeight = 'normal';
+            timeCell.style.color = 'inherit';
+          }, 1000);
+        }
+      }
+    }
+
+    // Function to validate input and change cell color
+    function validateInput(input, correctValue, correctValue2) {
+      try {
+        const cell = input.parentElement.parentElement;
+        const row = cell.closest('tr');
+        if (!row) {
+          throw new Error('Could not find row for input');
+        }
+
+        const pinyinDisplay = document.getElementById(input.parentElement.nextElementSibling.id);
+        if (!pinyinDisplay) {
+          throw new Error('Could not find pinyin display');
+        }
+
+        const itemId = pinyinDisplay.id;
+        if (!itemId) {
+          throw new Error('Could not find item ID');
+        }
+        
+        // Auto-start timer if not started and this is the first typing
+        if (!timerInterval) {
+          const startBtn = document.getElementById('startButton');
+          if (startBtn && !startBtn.disabled) {
+            startExercise(); // start the timer and enable pause
+          }
+        }
+
+        // First validate the pinyin input format
+        //alert(input);
+        const cleanedInput = sanitizeInput(input.value || "");
+        
+        //const isPinyinInputWellFormed = validatePinyinInput(sanitizedInput.value);
+        if (cleanedInput.trim() !== input.value.trim()) {
+          updateCellStatus(cell, 'incorrect');
+          cell.setAttribute('aria-invalid', 'true');
+          return;
+        }
+        
+        const cleanedCorrectValue = cleanInput(correctValue);
+        const cleanedCorrectValue2 = cleanInput(correctValue2);
+        // Track which rows are actively being worked on (typed but not yet correct)
+        if (!rowTimers[itemId]) {
+          const isExactlyCorrectNow = (cleanedInput === cleanedCorrectValue || cleanedInput === cleanedCorrectValue2);
+          if (!isExactlyCorrectNow && cleanedInput.length > 0) {
+            activeRows[itemId] = true;
+            // Ensure baseline snapshot for this lap
+            if (rowLapIndexBaseline[itemId] !== lapIndex) {
+              rowPauseAccumBaseline[itemId] = rowPauseAccum[itemId] || 0;
+              rowLapIndexBaseline[itemId] = lapIndex;
+            }
+          } else if (cleanedInput.length === 0) {
+            delete activeRows[itemId];
+          }
+        }
+
+        const inputFiltered = removeNumbers(cleanedInput);
+        const correctValueFiltered = removeNumbers(cleanedCorrectValue);
+        const correctValueFiltered2 = removeNumbers(cleanedCorrectValue2);
+        
+        cell.setAttribute('aria-invalid', 'false');
+        
+        if (cleanedInput === cleanedCorrectValue || cleanedInput === cleanedCorrectValue2) {
+        // Mark row as no longer active when correct
+          delete activeRows[itemId];
+          delete rowPauseStartTimes[itemId];
+          updateCellStatus(cell, 'correct');
+          updateCompletionTime(itemId);
+        } else if (inputFiltered === correctValueFiltered || inputFiltered === correctValueFiltered2) {
+          updateCellStatus(cell, 'partial');
+        } else {
+          updateCellStatus(cell, 'incorrect');
+        }
+
+        // Debug log for validation
+        console.log('Validation:', {
+          input: cleanedInput,
+          expected: cleanedCorrectValue,
+          isMatch: cleanedInput === cleanedCorrectValue
+        });
+
+        checkWinCondition();
+      } catch (error) {
+        console.error('Error in validateInput:', error);
+        showErrorUI('檢查答案時發生錯誤。請重試。'+error.message);
+      }
+    }
+
+    // Function to check if all inputs match the corresponding item.extra2 values
+    function checkWinCondition() {
+      try {
+        const table = document.getElementById("dynamicTable");
+        if (!table || table.rows.length <= 1) return; // Skip if no table or only header row
+
+        let allMatch = true;
+        let allFilled = true;
+        let totalInputs = 0;
+        let correctInputs = 0;
+
+        // Skip header row
+        for (let i = 1; i < table.rows.length; i++) {
+          const row = table.rows[i];
+          const inputWrapper = row.cells[COLUMNS.INPUT].querySelector('.input-pinyin-wrapper');
+          if (!inputWrapper) {
+            console.error('Could not find input wrapper for row', i);
+            allMatch = false;
+            continue;
+          }
+
+          const input = inputWrapper.querySelector('.text-input');
+          if (!input) {
+            console.error('Could not find input element for row', i);
+            allMatch = false;
+            continue;
+          }
+
+          totalInputs++;
+          const cleanedInput = cleanInput(input.value);
+          if (!cleanedInput) {
+            allFilled = false;
+            allMatch = false;
+            break;
+          }
+
+          // Get the pinyin display which contains the item ID
+          const pinyinDisplay = inputWrapper.querySelector('.pinyin-display');
+          if (!pinyinDisplay) {
+            console.error('Could not find pinyin display for row', i);
+            allMatch = false;
+            continue;
+          }
+          
+          const itemId = pinyinDisplay.id;
+          // Find the corresponding item
+          const item = items.find(item => item.id === itemId);
+          if (!item) {
+            console.error('Could not find item for id', itemId);
+            allMatch = false;
+            continue;
+          }
+
+          const isCorrect = cleanedInput === cleanInput(item.inputPinyin);
+          if (isCorrect) {
+            correctInputs++;
+          } else {
+            allMatch = false;
+          }
+        }
+
+        // Debug log for win condition
+        console.log('Win Condition Check:', {
+          totalInputs,
+          correctInputs,
+          allMatch,
+          allFilled
+        });
+
+        if (allMatch && allFilled && totalInputs > 0 && totalInputs === correctInputs) {
+          console.log('Win condition met! Stopping timer and showing banner...');
+          stopTimer();
+          showWinBanner();
+        }
+      } catch (error) {
+        console.error('Error in checkWinCondition:', error);
+        showErrorUI('檢查答案時發生錯誤。請重試。');
+      }
+    }
+
+    // Function to display the "You Win" banner
+    function showWinBanner() {
+      try {
+        const existingBanner = document.getElementById("winBanner");
+        if (existingBanner) {
+          existingBanner.remove();
+        }
+
+        const newBanner = document.createElement("div");
+        newBanner.id = "winBanner";
+        newBanner.textContent = `恭喜完成! 繼續努力, 再接再勵! 用時: ${formatTime(elapsedTime)}`;
+        newBanner.style.position = "fixed";
+        newBanner.style.top = "10px";
+        newBanner.style.left = "50%";
+        newBanner.style.transform = "translateX(-50%)";
+        newBanner.style.padding = "10px 20px";
+        newBanner.style.backgroundColor = "gold";
+        newBanner.style.color = "black";
+        newBanner.style.fontSize = "24px";
+        newBanner.style.fontWeight = "bold";
+        newBanner.style.border = "2px solid black";
+        newBanner.style.borderRadius = "10px";
+        newBanner.style.zIndex = "1000";
+        newBanner.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+        document.body.appendChild(newBanner);
+
+        // Add celebration effect (optional)
+        newBanner.style.animation = "celebrate 0.5s ease-in-out";
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes celebrate {
+            0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+            70% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+      } catch (error) {
+        console.error('Error showing win banner:', error);
+      }
+    }
+
+    // Function to toggle visibility of the ID column
+    function toggleIdColumn() {
+      const idCells = document.querySelectorAll(".idColumn"); // Select all ID column cells
+      const toggleButton = document.querySelector("button[onclick='toggleIdColumn()']");
+      const checkbox = document.getElementById("showIdColumnCheckbox");
+      
+      // Toggle visibility state
+      isIdColumnVisible = !isIdColumnVisible;
+      
+      // Update checkbox state
+      checkbox.checked = isIdColumnVisible;
+      
+      // Update cell visibility
+      idCells.forEach(cell => {
+        cell.style.display = isIdColumnVisible ? "table-cell" : "none";
+      });
+      
+      // Update button text
+      if (toggleButton) {
+        toggleButton.textContent = isIdColumnVisible ? "隱藏詞語" : "顯示詞語";
+      }
+    }
+
+    // Helper function to randomly pick items up to a specified count
+    function randomPick(array, count) {
+      const result = [];
+      const availableItems = [...array];
+      while (result.length < count && availableItems.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableItems.length);
+        result.push(availableItems.splice(randomIndex, 1)[0]);
+      }
+      return result;
+    }
+
+    // Function to select the last option by default
+    function selectLastOption() {
+      const groupSelect = document.getElementById("groupSelect");
+      const lastOption = groupSelect.options[groupSelect.options.length - 1];
+      lastOption.selected = true; // Mark the last option as selected
+    }
+
+    document.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveChallengingItemsToFile('fileToSaveRevisionItems1', 'fileToSaveRevisionItems2');
+      }
+      
+      // Ctrl/Cmd + G to generate table
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        generateTable();
+      }
+
+      // Space key to pause/resume (only when not typing in an input field)
+      if (e.key === ' ' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        togglePause();
+      }
+    });
+
+    // Add debouncing to input validation
+    const debounce = (func, wait) => {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    };
+
+    // Check for browser compatibility when loading files
+    function checkBrowserCompatibility() {
+      if (!window.FileReader) {
+        alert('Your browser does not support file reading. Please use a modern browser.');
+        return false;
+      }
+      return true;
+    }
+
+  </script>
+</head>
+<body>
+  <h1>中文默書拼音練習</h1>
+  <div class="timer-controls">
+    用時: <span id="timerDisplay">00:00</span>
+    <button id="startButton" class="pause-button start-button" onclick="startExercise()">開始</button>
+    <button id="pauseButton" class="pause-button" onclick="togglePause()" disabled>暫停</button>
+  </div>
+  <p>
+    輸入拼音,並在aoeiuü後面,標上聲調(1/2/3/4)和以v代替ü。<br/>
+    例如:"綠"的"輸入拼音"應為"lv4";"飄"則為"pia1o"。  <br/>
+    如果輸入正確，字段將變為<span style="background-color: greenyellow;">淺綠色</span>。如果輸入僅是聲調錯誤，字段將變為<span style="background-color: yellow;">黃色</span>，否則字段會變為<span style="background-color: red;">紅色</span>。 <br/>
+    注意: 聲母會以<span style="color: blue;">藍色</span>顯示。<br/>
+    <small>提示：按空白鍵可暫停/繼續計時器</small>
+  </p>
+  <button id="toggleGroupSelectButton" onclick="toggleGroupSelection()">課題全選</button>
+  <div>
+    <label for="groupSelect">課題選擇(可多選):</label><br/>
+    <select id="groupSelect" multiple></select>
+        </div>
+
+  <div>
+    <label>
+      <input type="checkbox" id="challengingCheckbox">單選需要重溫的詞語
+    </label>
+        </div>
+
+  <div>
+    <label for="rowCount">詞語溫習數量:</label>
+    <input id="rowCount" type="number" min="1" placeholder="所有">
+        </div>
+
+  <div>
+    <label>
+      <input type="checkbox" id="showIdColumnCheckbox">生成練習時，顯示詞語
+    </label>
+    </div>
+
+  <div>
+    <label for="loadFileInput" class="btn">上載之前記錄需要重溫的字詞列</label>
+    <input type="file" id="loadFileInput" onchange="loadChallengingItemsFromFile(event)">
+        </div>
+  <button onclick="generateTable()">生成練習</button><br/>
+  <input id="fileToSaveRevisionItems1" value="pinyinRevisionItems.txt" aria-label="檔案名稱" title="輸入檔案名稱以儲存需要重溫的字詞列"/><button onclick="saveChallengingItemsToFile('fileToSaveRevisionItems1','fileToSaveRevisionItems2')">記錄需要重溫的字詞列</button><br/>
+  <button onclick="toggleIdColumn()">顯示詞語</button>
+  <table id="dynamicTable" border="1"></table>
+  <input id="fileToSaveRevisionItems2" value="pinyinRevisionItems.txt" aria-label="檔案名稱" title="輸入檔案名稱以儲存需要重溫的字詞列"/><button onclick="saveChallengingItemsToFile('fileToSaveRevisionItems2','fileToSaveRevisionItems1')">記錄需要重溫的字詞列</button>
+</body>
+</html>
