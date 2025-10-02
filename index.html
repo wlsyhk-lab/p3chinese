@@ -1059,9 +1059,9 @@
           }
         }
 
-        // First validate the pinyin input format
+        // First validate the pinyin input format after changing the input text to lower case
         //alert(input);
-        const cleanedInput = sanitizeInput(input.value || "");
+        const cleanedInput = sanitizeInput(input.value.toLowerCase() || "");
         
         //const isPinyinInputWellFormed = validatePinyinInput(sanitizedInput.value);
         if (cleanedInput.trim() !== input.value.trim()) {
@@ -1374,4 +1374,5 @@
   <input id="fileToSaveRevisionItems2" value="pinyinRevisionItems.txt" aria-label="檔案名稱" title="輸入檔案名稱以儲存需要重溫的字詞列"/><button onclick="saveChallengingItemsToFile('fileToSaveRevisionItems2','fileToSaveRevisionItems1')">記錄需要重溫的字詞列</button>
 </body>
 </html>
+
 
