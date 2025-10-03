@@ -627,7 +627,7 @@
     // Shared logic for formatting text with highlights for 聲母
     function formatTextWithHighlights(text) {
       let result = "";
-      let remainingText = text.toLowerCase();
+      let remainingText = text;
       let afterDelimiter = true;
 
       while (remainingText.length > 0) {
@@ -1061,7 +1061,7 @@
 
         // First validate the pinyin input format after changing the input text to lower case
         //alert(input);
-        const cleanedInput = sanitizeInput(input.value.toLowerCase() || "");
+        const cleanedInput = sanitizeInput(input.value || "");
         
         //const isPinyinInputWellFormed = validatePinyinInput(sanitizedInput.value);
         if (cleanedInput.trim() !== input.value.trim()) {
@@ -1327,6 +1327,7 @@
   </script>
 </head>
 <body>
+  <br/><br />
   <h1>中文默書拼音練習</h1>
   <div class="timer-controls">
     用時: <span id="timerDisplay">00:00</span>
@@ -1374,5 +1375,6 @@
   <input id="fileToSaveRevisionItems2" value="pinyinRevisionItems.txt" aria-label="檔案名稱" title="輸入檔案名稱以儲存需要重溫的字詞列"/><button onclick="saveChallengingItemsToFile('fileToSaveRevisionItems2','fileToSaveRevisionItems1')">記錄需要重溫的字詞列</button>
 </body>
 </html>
+
 
 
