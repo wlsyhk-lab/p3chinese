@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pinyin Exercise using an Interactive Table with Toggleable Columns and Validation</title>
+  <title>Pinyin Exercise for Chinese Dictation in P3</title>
   <!-- 拼音符號
         ā á ǎ à a
         ē é ě è e
@@ -218,13 +218,17 @@
   <script>
     const matchList = ["zh", "ch", "sh", "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "w", "x", "y", "z"];
     const delimiters = /[\s,:;.&+\-\\\[\]\(\)\{\}\|\/]+/;
-    //中文三上 單元一 
+
+    //中文三上
     const groupDetails = [
       { groupId: 311, description: "1.五個新書包" },
+      { groupId: 301, description: "成語單元一" },
       { groupId: 312, description: "2.學寫毛筆字" },
+      { groupId: 304, description: "成語單元四" },
+      { groupId: 303, description: "成語單元三" },
+      { groupId: 302, description: "成語單元二" },
     ];
 
-	
     // List of items with each id as a Chinese word for inputting the corresponding pinyin.
     const itemSoundBaseURL = "file:///F:/yangre/Willanson/St%20Paul%27s%20Co-ed/P3/%E4%B8%AD%E6%96%87/mp3/";
     const items = [
@@ -238,8 +242,8 @@
       { id: "留下", groupId: 311, soundPath: "留下.mp3", inputPinyin: "liu2 xia4", pinyin: "liú xıà" },
       { id: "弄錯", groupId: 311, soundPath: "弄錯.mp3", inputPinyin: "no4ng cuo4", pinyin: "nòng cuò" },
       { id: "絲線", groupId: 311, soundPath: "絲線.mp3", inputPinyin: "si1 xia4n", pinyin: "sī xiàn" },
-	  { id: "同意", groupId: 311, soundPath: "同意.mp3", inputPinyin: "to2ng yi4", pinyin: "tóng yì" },
-	  { id: "星期", groupId: 311, soundPath: "星期.mp3", inputPinyin: "xi1ng qi1", pinyin: "xīng qī" },
+      { id: "同意", groupId: 311, soundPath: "同意.mp3", inputPinyin: "to2ng yi4", pinyin: "tóng yì" },
+      { id: "星期", groupId: 311, soundPath: "星期.mp3", inputPinyin: "xi1ng qi1", pinyin: "xīng qī" },
       { id: "於是", groupId: 311, soundPath: "於是.mp3", inputPinyin: "yu2 shi4", pinyin: "yǘ shì" },
       { id: "早晨", groupId: 311, soundPath: "早晨.mp3", inputPinyin: "za3o chen", pinyin: "zǎo chen" },
       { id: "鑽進", groupId: 311, soundPath: "鑽進.mp3", inputPinyin: "zua1n ji4n", pinyin: "zuān jìn" },
@@ -263,13 +267,42 @@
       { id: "抹", groupId: 312, soundPath: "抹.mp3", inputPinyin: "mo3", pinyin: "mǒ" },
       { id: "恭喜", groupId: 312, soundPath: "恭喜.mp3", inputPinyin: "go1ng xi3", pinyin: "gōng xǐ" },
       { id: "煩惱", groupId: 312, soundPath: "煩惱.mp3", inputPinyin: "fa2n na3o", pinyin: "fán nǎo" },
-      { id: "三顧草廬", groupId: 312, soundPath: "三顧草廬.mp3", inputPinyin: "sa1n gu4 ca3o lu2", pinyin: "sān gù cǎo lú" },
-      { id: "一諾千金", groupId: 312, soundPath: "一諾千金.mp3", inputPinyin: "yi2 nuo4 qia1n ji1n", pinyin: "yí nuò qiān jīn" },
-      { id: "千鈞一髮", groupId: 312, soundPath: "千鈞一髮.mp3", inputPinyin: "qia1n ju1n yi2 fa4", pinyin: "qiān jūn yí fà" },
-      { id: "一落千丈", groupId: 312, soundPath: "一落千丈.mp3", inputPinyin: "yi2 luo4 qia1n zha4ng", pinyin: "yí luò qiān zhàng" },
-      { id: "三思而行", groupId: 312, soundPath: "三思而行.mp3", inputPinyin: "sa1n si1 e2r xi2ng", pinyin: "sān sī ér xíng" },
-      { id: "千絲萬縷", groupId: 312, soundPath: "千絲萬縷.mp3", inputPinyin: "qia1n si1 wa4n lv3", pinyin: "qiān sī wàn lǚ" },
-      { id: "一絲不苟", groupId: 312, soundPath: "一絲不苟.mp3", inputPinyin: "yi4 si1 bu4 go3u", pinyin: "yì sī bù gǒu" },
+      // 成語單元一
+      { id: "三顧草廬", groupId: 301, soundPath: "三顧草廬.mp3", inputPinyin: "sa1n gu4 ca3o lu2", pinyin: "sān gù cǎo lú" },
+      { id: "一諾千金", groupId: 301, soundPath: "一諾千金.mp3", inputPinyin: "yi2 nuo4 qia1n ji1n", pinyin: "yí nuò qiān jīn" },
+      { id: "千鈞一髮", groupId: 301, soundPath: "千鈞一髮.mp3", inputPinyin: "qia1n ju1n yi1 fa4", pinyin: "qiān jūn yī fà" },
+      { id: "一落千丈", groupId: 301, soundPath: "一落千丈.mp3", inputPinyin: "yi2 luo4 qia1n zha4ng", pinyin: "yí luò qiān zhàng" },
+      { id: "三思而行", groupId: 301, soundPath: "三思而行.mp3", inputPinyin: "sa1n si1 e2r xi2ng", pinyin: "sān sī ér xíng" },
+      { id: "千絲萬縷", groupId: 301, soundPath: "千絲萬縷.mp3", inputPinyin: "qia1n si1 wa4n lv3", pinyin: "qiān sī wàn lǚ" },
+      { id: "一絲不苟", groupId: 301, soundPath: "一絲不苟.mp3", inputPinyin: "yi4 si1 bu4 go3u", pinyin: "yì sī bù gǒu" },
+      { id: "五光十色", groupId: 301, soundPath: "五光十色.mp3", inputPinyin: "wu3 gua1ng shi2 se4", pinyin: "wǔ guāng shí sè" },
+      // 成語單元四
+      { id: "畏首畏尾", groupId: 304, soundPath: "畏首畏尾.mp3", inputPinyin: "we4i sho3u we4i we3i", pinyin: "wèi shǒu wèi wěi" },
+      { id: "口若懸河", groupId: 304, soundPath: "口若懸河.mp3", inputPinyin: "ko3u ruo4 xua2n he2", pinyin: "kǒu ruò xuán hé" },
+      { id: "居安思危", groupId: 304, soundPath: "居安思危.mp3", inputPinyin: "ju1 a1n si1 wei2", pinyin: "jū ān sī wéi" },
+      { id: "信口開河", groupId: 304, soundPath: "信口開河.mp3", inputPinyin: "xi4n ko3u kai1 he2", pinyin: "xìn kǒu kāi hé" },
+      { id: "彬彬有禮", groupId: 304, soundPath: "彬彬有禮.mp3", inputPinyin: "bi1n bi1n you3 li3", pinyin: "bīn bīn yǒu lǐ" },
+      { id: "沉默寡言", groupId: 304, soundPath: "沉默寡言.mp3", inputPinyin: "che2n mo4 gua3 ya2n", pinyin: "chén mò guǎ yán" },
+      { id: "快人快語", groupId: 304, soundPath: "快人快語.mp3", inputPinyin: "kua4i re2n kua4i yu3", pinyin: "kuài rén kuài yǔ" },
+      { id: "心直口快", groupId: 304, soundPath: "心直口快.mp3", inputPinyin: "xi1n zhi2 ko3u kua4i", pinyin: "xīn zhí kǒu kuài" },
+      // 成語單元三
+      { id: "繞樑三日", groupId: 303, soundPath: "繞樑三日.mp3", inputPinyin: "ra4o lia2ng sa1n ri4", pinyin: "rào liáng sān rì" },
+      { id: "栩栩如生", groupId: 303, soundPath: "栩栩如生.mp3", inputPinyin: "xu3 xu3 ru2 she1ng", pinyin: "xǔ xǔ rú shēng" },
+      { id: "天衣無縫", groupId: 303, soundPath: "天衣無縫.mp3", inputPinyin: "tia1n yi1 wu2 fe4ng", pinyin: "tiān yī wú fèng" },
+      { id: "孜孜不倦", groupId: 303, soundPath: "孜孜不倦.mp3", inputPinyin: "zi1 zi1 bu4 jua4n", pinyin: "zī zī bù juàn" },
+      { id: "五體投地", groupId: 303, soundPath: "五體投地.mp3", inputPinyin: "wu3 ti3 to2u di4", pinyin: "wǔ tǐ tóu dì" },
+      { id: "美輪美奐", groupId: 303, soundPath: "美輪美奐.mp3", inputPinyin: "me3i lu2n mei3 hua4n", pinyin: "měi lún měi huàn" },
+      { id: "一舉成名", groupId: 303, soundPath: "一舉成名.mp3", inputPinyin: "yi1 ju3 che2ng mi2ng", pinyin: "yì jǔ chéng míng" },
+      { id: "一鳴驚人", groupId: 303, soundPath: "一鳴驚人.mp3", inputPinyin: "yi1 mi2ng ji1ng re2n", pinyin: "yì míng jīng rén" },
+      // 成語單元二
+      { id: "煮豆燃萁", groupId: 302, soundPath: "煮豆燃萁.mp3", inputPinyin: "zhu3 do4u ra2n qi2", pinyin: "zhǔ dòu rán qí" },
+      { id: "揠苗助長", groupId: 302, soundPath: "揠苗助長.mp3", inputPinyin: "ya4 mia2o zhu4 zha3ng", pinyin: "yà miáo zhù zhǎng" },
+      { id: "草木皆兵", groupId: 302, soundPath: "草木皆兵.mp3", inputPinyin: "ca3o mu4 jie1 bi1ng", pinyin: "cǎo mù jiē bīng" },
+      { id: "投桃報李", groupId: 302, soundPath: "投桃報李.mp3", inputPinyin: "to2u ta2o ba4o li3", pinyin: "tóu táo bào lǐ" },
+      { id: "世外桃源", groupId: 302, soundPath: "世外桃源.mp3", inputPinyin: "shi4 wa4i ta2o yua2n", pinyin: "shì wài táo yuán" },
+      { id: "含苞待放", groupId: 302, soundPath: "含苞待放.mp3", inputPinyin: "ha2n ba1o da4i fa4ng", pinyin: "hán bāo dài fàng" },
+      { id: "雨後春筍", groupId: 302, soundPath: "雨後春筍.mp3", inputPinyin: "yu3 ho4u chu1n su3n", pinyin: "yǔ hòu chūn sǔn" },
+      { id: "花團錦簇", groupId: 302, soundPath: "花團錦簇.mp3", inputPinyin: "hua1 tua2n ji3n cu4", pinyin: "huā tuán jǐn cù" },
     ];
 	
     let allGroupsSelected = false; // State to track toggle status
@@ -1059,7 +1092,7 @@
           }
         }
 
-        // First validate the pinyin input format after changing the input text to lower case
+        // First validate the pinyin input format
         //alert(input);
         const cleanedInput = sanitizeInput(input.value || "");
         
@@ -1327,7 +1360,7 @@
   </script>
 </head>
 <body>
-  <br/><br />
+  <br/><br/>
   <h1>中文默書拼音練習</h1>
   <div class="timer-controls">
     用時: <span id="timerDisplay">00:00</span>
@@ -1338,36 +1371,36 @@
     輸入拼音,並在aoeiuü後面,標上聲調(1/2/3/4)和以v代替ü。<br/>
     例如:"綠"的"輸入拼音"應為"lv4";"飄"則為"pia1o"。  <br/>
     如果輸入正確，字段將變為<span style="background-color: greenyellow;">淺綠色</span>。如果輸入僅是聲調錯誤，字段將變為<span style="background-color: yellow;">黃色</span>，否則字段會變為<span style="background-color: red;">紅色</span>。 <br/>
-    注意: 聲母會以<span style="color: blue;">藍色</span>顯示。<br/>
+    注意: 拼音字母須為小楷，聲母會以<span style="color: blue;">藍色</span>顯示。<br/>
     <small>提示：按空白鍵可暫停/繼續計時器</small>
   </p>
   <button id="toggleGroupSelectButton" onclick="toggleGroupSelection()">課題全選</button>
   <div>
     <label for="groupSelect">課題選擇(可多選):</label><br/>
     <select id="groupSelect" multiple></select>
-        </div>
+  </div>
 
   <div>
     <label>
       <input type="checkbox" id="challengingCheckbox">單選需要重溫的詞語
     </label>
-        </div>
+  </div>
 
   <div>
     <label for="rowCount">詞語溫習數量:</label>
     <input id="rowCount" type="number" min="1" placeholder="所有">
-        </div>
+  </div>
 
   <div>
     <label>
       <input type="checkbox" id="showIdColumnCheckbox">生成練習時，顯示詞語
     </label>
-    </div>
+  </div>
 
   <div>
     <label for="loadFileInput" class="btn">上載之前記錄需要重溫的字詞列</label>
     <input type="file" id="loadFileInput" onchange="loadChallengingItemsFromFile(event)">
-        </div>
+  </div>
   <button onclick="generateTable()">生成練習</button><br/>
   <input id="fileToSaveRevisionItems1" value="pinyinRevisionItems.txt" aria-label="檔案名稱" title="輸入檔案名稱以儲存需要重溫的字詞列"/><button onclick="saveChallengingItemsToFile('fileToSaveRevisionItems1','fileToSaveRevisionItems2')">記錄需要重溫的字詞列</button><br/>
   <button onclick="toggleIdColumn()">顯示詞語</button>
@@ -1375,6 +1408,3 @@
   <input id="fileToSaveRevisionItems2" value="pinyinRevisionItems.txt" aria-label="檔案名稱" title="輸入檔案名稱以儲存需要重溫的字詞列"/><button onclick="saveChallengingItemsToFile('fileToSaveRevisionItems2','fileToSaveRevisionItems1')">記錄需要重溫的字詞列</button>
 </body>
 </html>
-
-
-
