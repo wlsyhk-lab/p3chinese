@@ -71,7 +71,7 @@
 </style>
 </head>
 <body>
-<p>轉往: <a href="小三字詞拼音默書.html">小三字詞拼音默書</a></p>
+<p>轉往: <a href="index.html">小三字詞拼音默書</a></p>
 <h1>課文普通話讀默</h1>
 
 <div class="audio-select-bar">
@@ -169,7 +169,7 @@ audioList.forEach((item, index) => {
   ["0.5","0.6","0.7","0.8","0.9","1"].forEach(sp=>{
     const opt=document.createElement("option");
     opt.value=sp; opt.textContent=`${sp}x`;
-    if(sp==="0.7") opt.selected=true;
+    if(sp==="0.6") opt.selected=true;
     speedSelect.appendChild(opt);
   });
   speedSelect.addEventListener("change", ()=> audio.playbackRate = parseFloat(speedSelect.value));
@@ -564,3 +564,4 @@ audioSelect.addEventListener("change", updateCardsVisibility);
 
 </body>
 </html>
+
