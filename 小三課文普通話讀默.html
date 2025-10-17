@@ -71,7 +71,7 @@
 </style>
 </head>
 <body>
-<p>轉往: <a href="index.html">小三字詞拼音默書</a></p>
+<p>轉往: <a href="小三字詞拼音默書.html">小三字詞拼音默書</a></p>
 <h1>課文普通話讀默</h1>
 
 <div class="audio-select-bar">
@@ -87,7 +87,8 @@
 <script>
 const audioList = [
   { name: "小三單元一《五個新書包》", url: "mp3LessonText/小三單元一《五個新書包》普通話.mp3", defaultSegments: [34.1, 68.6, 98.2] },
-  { name: "小三單元一《學寫毛筆字》", url: "mp3LessonText/小三單元一《學寫毛筆字》普通話.mp3", defaultSegments: [29.3, 45.8, 69, 97] }
+  { name: "小三單元一《學寫毛筆字》", url: "mp3LessonText/小三單元一《學寫毛筆字》普通話.mp3", defaultSegments: [29.3, 45.8, 69, 97] },
+  { name: "小三單元一《我們都是六號上》", url: "mp3LessonText/小三單元一《我們都是六號上》普通話.mp3", defaultSegments: [17.9, 48.9, 68.5] },
 ];
 
 const MIN_PLAY_DURATION_IN_SEC = 2.5;
@@ -363,7 +364,7 @@ audioList.forEach((item, index) => {
       if (nextIdx === -1) nextIdx = 0;
 
       endPt = segmentPoints[nextIdx];
-      startPt = nextIdx > 0 ? segmentPoints[nextIdx - 1] : 0;
+      startPt = nextIdx > 0 ? Math.max(segmentPoints[nextIdx - 1]-0.15,0) : 0;
     }
 
     // Update selects
