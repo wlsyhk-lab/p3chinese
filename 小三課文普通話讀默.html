@@ -88,7 +88,8 @@
 const audioList = [
   { name: "小三單元一《五個新書包》", url: "mp3LessonText/小三單元一《五個新書包》普通話.mp3", defaultSegments: [34.1, 68.6, 98.2] },
   { name: "小三單元一《學寫毛筆字》", url: "mp3LessonText/小三單元一《學寫毛筆字》普通話.mp3", defaultSegments: [29.3, 45.8, 69, 97] },
-  { name: "小三單元一《我們都是六號上》", url: "mp3LessonText/小三單元一《我們都是六號上》普通話.mp3", defaultSegments: [17.9, 48.9, 68.5] },
+  { name: "小三單元三《我們都是六號上》", url: "mp3LessonText/小三單元三《我們都是六號上》普通話.mp3", defaultSegments: [17.9, 48.9, 68.5] },
+  { name: "小三單元三《我們都是六號下》", url: "mp3LessonText/小三單元三《我們都是六號下》普通話.mp3", defaultSegments: [26.8, 44.7, 59.1, 76.9] },
 ];
 
 const MIN_PLAY_DURATION_IN_SEC = 2.5;
@@ -137,416 +138,444 @@ function updateCardsVisibility() {
 
 // Build cards
 audioList.forEach((item, index) => {
-  const card = document.createElement("div");
-  card.className = "audio-card";
-
-  const title = document.createElement("div");
-  title.className = "card-title";
-  title.textContent = item.name;
-
-  const audio = document.createElement("audio");
-  audio.controls = true;
-  const src = document.createElement("source");
-  src.src = item.url;
-  src.type = "audio/mpeg";
-  audio.appendChild(src);
-
-  const progressContainer = document.createElement("div");
-  progressContainer.className = "segment-progress";
-  const progressBar = document.createElement("div");
-  progressBar.className = "bar";
-  progressContainer.appendChild(progressBar);
-
-  const timeLabel = document.createElement("div");
-  timeLabel.className = "time-label";
-
-  // Speed controls
-  const speedGroup = document.createElement("div");
-  speedGroup.className = "control-group";
-  const speedLabel = document.createElement("label");
-  speedLabel.textContent = "Speed:";
-  const speedSelect = document.createElement("select");
-  ["0.5","0.6","0.7","0.8","0.9","1"].forEach(sp=>{
-    const opt=document.createElement("option");
-    opt.value=sp; opt.textContent=`${sp}x`;
-    if(sp==="0.6") opt.selected=true;
-    speedSelect.appendChild(opt);
-  });
-  speedSelect.addEventListener("change", ()=> audio.playbackRate = parseFloat(speedSelect.value));
-  speedGroup.append(speedLabel, speedSelect);
-
-  // Pause/segment controls
-  const pauseGroup = document.createElement("div");
-  pauseGroup.className = "control-group";
-  const saveSegBtn = document.createElement("button");
-  saveSegBtn.textContent = "💾 Save Segment Pt";
-  const rewindBtn = document.createElement("button");
-  rewindBtn.textContent = "⏪ Rewind";
-  rewindBtn.className = "btn-rewind";
-  rewindBtn.disabled = true;
-  const uploadBtn = document.createElement("button");
-  uploadBtn.textContent = "⬆️ Upload Segments";
-  const fileInput = document.createElement("input");
-  fileInput.type = "file"; fileInput.accept = ".json"; fileInput.style.display = "none";
-  const downloadBtn = document.createElement("button");
-  downloadBtn.textContent = "⬇️ Download Segments";
-  pauseGroup.append(saveSegBtn, uploadBtn, downloadBtn, fileInput);
-
-  // Segment list
-  const segListTitle = document.createElement("div");
-  segListTitle.className = "list-title";
-  segListTitle.textContent = "Segment Pause Points:";
-  segListTitle.style.display = "none";
-  const collapseContent = document.createElement("div");
-  collapseContent.className = "collapse-content";
-  const segList = document.createElement("ul");
-  segList.className = "pause-list";
-  collapseContent.append(segList);
-
-  const startSelect = document.createElement("select");
-  const endSelect = document.createElement("select");
-  startSelect.innerHTML = "<option value=''>Start</option>";
-  endSelect.innerHTML = "<option value=''>End</option>";
-
-  const segmentPoints = [];
-  if (Array.isArray(item.defaultSegments)) segmentPoints.push(...item.defaultSegments);
-
-  function updateSegList(){
-    segList.innerHTML = "";
-    segListTitle.style.display = segmentPoints.length ? "block" : "none";
-    segmentPoints.sort((a,b)=>a-b);
+  try {
+    //console.log('build card index', index, item.name);
+  
+    const card = document.createElement("div");
+    card.className = "audio-card";
+  
+    const title = document.createElement("div");
+    title.className = "card-title";
+    title.textContent = item.name;
+  
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    const src = document.createElement("source");
+    src.src = item.url;
+    src.type = "audio/mpeg";
+    audio.appendChild(src);
+  
+    const progressContainer = document.createElement("div");
+    progressContainer.className = "segment-progress";
+    const progressBar = document.createElement("div");
+    progressBar.className = "bar";
+    progressContainer.appendChild(progressBar);
+  
+    const timeLabel = document.createElement("div");
+    timeLabel.className = "time-label";
+  
+    // Speed controls
+    const speedGroup = document.createElement("div");
+    speedGroup.className = "control-group";
+    const speedLabel = document.createElement("label");
+    speedLabel.textContent = "Speed:";
+    const speedSelect = document.createElement("select");
+    ["0.5","0.6","0.7","0.8","0.9","1"].forEach(sp=>{
+      const opt=document.createElement("option");
+      opt.value=sp; opt.textContent=`${sp}x`;
+      if(sp==="0.6") opt.selected=true;
+      speedSelect.appendChild(opt);
+    });
+    speedSelect.addEventListener("change", ()=> audio.playbackRate = parseFloat(speedSelect.value));
+    speedGroup.append(speedLabel, speedSelect);
+  
+    // Pause/segment controls
+    const pauseGroup = document.createElement("div");
+    pauseGroup.className = "control-group";
+    const saveSegBtn = document.createElement("button");
+    saveSegBtn.textContent = "💾 Save Segment Pt";
+    const rewindBtn = document.createElement("button");
+    rewindBtn.textContent = "⏪ Rewind";
+    rewindBtn.className = "btn-rewind";
+    rewindBtn.disabled = true;
+    const uploadBtn = document.createElement("button");
+    uploadBtn.textContent = "⬆️ Upload Segments";
+    const fileInput = document.createElement("input");
+    fileInput.type = "file"; fileInput.accept = ".json"; fileInput.style.display = "none";
+    const downloadBtn = document.createElement("button");
+    downloadBtn.textContent = "⬇️ Download Segments";
+    pauseGroup.append(saveSegBtn, uploadBtn, downloadBtn, fileInput);
+  
+    // Segment list
+    const segListTitle = document.createElement("div");
+    segListTitle.className = "list-title";
+    segListTitle.textContent = "Segment Pause Points:";
+    segListTitle.style.display = "none";
+    const collapseContent = document.createElement("div");
+    collapseContent.className = "collapse-content";
+    const segList = document.createElement("ul");
+    segList.className = "pause-list";
+    collapseContent.append(segList);
+  
+    const startSelect = document.createElement("select");
+    const endSelect = document.createElement("select");
     startSelect.innerHTML = "<option value=''>Start</option>";
     endSelect.innerHTML = "<option value=''>End</option>";
-    segmentPoints.forEach((pt,i)=>{
-      const li = document.createElement("li");
-      li.textContent = `${pt.toFixed(2)}s`;
-      const del = document.createElement("button");
-      del.textContent = "❌";
-      del.addEventListener("click", ()=>{ segmentPoints.splice(i,1); updateSegList(); });
-      li.appendChild(del);
-      segList.appendChild(li);
-      const sOpt = document.createElement("option");
-      sOpt.value = pt; sOpt.textContent = `${pt.toFixed(2)}s`; startSelect.appendChild(sOpt);
-      const eOpt = document.createElement("option");
-      eOpt.value = pt; eOpt.textContent = `${pt.toFixed(2)}s`; endSelect.appendChild(eOpt);
-    });
-  }
-  updateSegList();
-
-  // Segment state (per card)
-  const segmentState = {
-    active: false,
-    start: 0,
-    end: 0,
-    monitorId: null,
-    pauseHistory: [],       // confirmed rewind checkpoints
-    candidatePause: null,   // last pause point waiting for validation upon next pause
-    lastPlayAudioTime: null // time when audio last started/resumed
-  };
-
-  // Monitoring: single interval guard to prevent flicker/duplication
-  function startSegmentMonitoring() {
-    if (segmentState.monitorId !== null) return; // already running
-    const dur = segmentState.end - segmentState.start;
-    segmentState.monitorId = setInterval(() => {
-      const cur = audio.currentTime;
-      if (cur >= segmentState.end) {
-        audio.pause();
-        audio.currentTime = segmentState.end;
-        stopSegmentMonitoring();
-        return;
-      }
-      const pct = ((cur - segmentState.start) / dur) * 100;
-      progressBar.style.width = `${Math.max(0, Math.min(pct, 100))}%`;
-      timeLabel.textContent = `${cur.toFixed(1)}s / ${segmentState.end.toFixed(1)}s`;
-    }, 100);
-  }
-
-  function stopSegmentMonitoring() {
-    if (segmentState.monitorId !== null) {
-      clearInterval(segmentState.monitorId);
-      segmentState.monitorId = null;
+  
+    const segmentPoints = [];
+    if (Array.isArray(item.defaultSegments)) segmentPoints.push(...item.defaultSegments);
+  
+    function updateSegList(){
+      segList.innerHTML = "";
+      segListTitle.style.display = segmentPoints.length ? "block" : "none";
+      segmentPoints.sort((a,b)=>a-b);
+      startSelect.innerHTML = "<option value=''>Start</option>";
+      endSelect.innerHTML = "<option value=''>End</option>";
+      segmentPoints.forEach((pt,i)=>{
+        const li = document.createElement("li");
+        li.textContent = `${pt.toFixed(2)}s`;
+        const del = document.createElement("button");
+        del.textContent = "❌";
+        del.addEventListener("click", ()=>{ segmentPoints.splice(i,1); updateSegList(); });
+        li.appendChild(del);
+        segList.appendChild(li);
+        const sOpt = document.createElement("option");
+        sOpt.value = pt; sOpt.textContent = `${pt.toFixed(2)}s`; startSelect.appendChild(sOpt);
+        const eOpt = document.createElement("option");
+        eOpt.value = pt; eOpt.textContent = `${pt.toFixed(2)}s`; endSelect.appendChild(eOpt);
+      });
     }
-    segmentState.active = false;
-    progressBar.style.width = "0%";
-    timeLabel.classList.remove("visible");
-    progressContainer.style.display = "none";
-    pauseSegBtn.textContent = "▶️ Play Next Segment";
-  }
-
-  // Segment controls
-  const segmentGroup = document.createElement("div");
-  segmentGroup.className = "segment-group";
-  const playBtn = document.createElement("button");
-  playBtn.textContent = "▶️ Play Segment";
-  const pauseSegBtn = document.createElement("button");
-  pauseSegBtn.textContent = "▶️ Continue";
-  segmentGroup.append(startSelect, endSelect, playBtn, pauseSegBtn, rewindBtn);
-
-  // Event handlers
-
-  // Save/Delete segment points
-  saveSegBtn.onclick = ()=> { segmentPoints.push(audio.currentTime); updateSegList(); };
-
-  uploadBtn.onclick = ()=> fileInput.click();
-  fileInput.onchange = e=>{
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = ev=>{
-      try {
-        const arr = JSON.parse(ev.target.result);
-        if (Array.isArray(arr)) {
-          segmentPoints.length = 0;
-          segmentPoints.push(...arr.map(Number));
-          updateSegList();
-          showToast("✅ Segment pause points uploaded.");
-        } else showToast("⚠️ Invalid format.");
-      } catch { showToast("❌ Failed to parse JSON."); }
+    updateSegList();
+  
+    // Segment state (per card)
+    const segmentState = {
+      active: false,
+      start: 0,
+      end: 0,
+      monitorId: null,
+      pauseHistory: [],       // confirmed rewind checkpoints
+      candidatePause: null,   // last pause point waiting for validation upon next pause
+      lastPlayAudioTime: null // time when audio last started/resumed
     };
-    r.readAsText(f);
-  };
-
-  downloadBtn.onclick = ()=>{
-    const blob = new Blob([JSON.stringify(segmentPoints,null,2)],{type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `${item.name}-segment-points.json`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  };
-
-  // Auto-adjust start/end select ordering
-  startSelect.addEventListener("change", () => {
-    const startVal = parseFloat(startSelect.value);
-    const endVal = parseFloat(endSelect.value);
-    if (!isNaN(startVal) && !isNaN(endVal) && endVal <= startVal) {
-      const nextHigher = segmentPoints.find(pt => pt > startVal);
-      endSelect.value = nextHigher !== undefined ? String(nextHigher) : "";
-    }
-  });
-
-  endSelect.addEventListener("change", () => {
-    const startVal = parseFloat(startSelect.value);
-    const endVal = parseFloat(endSelect.value);
-    if (!isNaN(startVal) && !isNaN(endVal) && endVal <= startVal) {
-      const reversed = [...segmentPoints].reverse();
-      const prevLower = reversed.find(pt => pt < endVal);
-      startSelect.value = prevLower !== undefined ? String(prevLower) : "";
-    }
-  });
-
-  // Play next defined segment convenience
-  function playNextDefinedSegment() {
-    // require at least one defined segment
-    if (!segmentPoints.length) { 
-      showToast("⚠️ No segment points defined."); 
-      return; 
-    }
-
-    segmentPoints.sort((a,b)=>a-b);
-
-    let startPt, endPt;
-
-    if (segmentState.end < audio.duration) {
-      // Already in a segment and not at the end of audio
-      startPt = segmentState.end;
-
-      // Find the next defined segment point strictly greater than current end
-      const nextIdx = segmentPoints.findIndex(pt => pt > segmentState.end);
-      if (nextIdx !== -1) {
-        endPt = segmentPoints[nextIdx];
-      } else {
-        // No more defined points, use audio end
-        endPt = audio.duration;
-      }
-    } else {
-      // Fresh start: behave as before
-      const ref = startSelect.value ? parseFloat(startSelect.value) : (audio.currentTime || 0);
-      let nextIdx = segmentPoints.findIndex(pt => pt > ref);
-      if (nextIdx === -1) nextIdx = 0;
-
-      endPt = segmentPoints[nextIdx];
-      startPt = nextIdx > 0 ? Math.max(segmentPoints[nextIdx - 1]-0.15,0) : 0;
-    }
-
-    // Update selects
-    startSelect.value = startPt ? String(startPt) : "";
-    endSelect.value = String(endPt);
-
-    // Trigger the existing play logic
-    playBtn.click();
-  }
-
-  // Pause/Continue button
-  pauseSegBtn.addEventListener("click", () => {
-    if (!segmentState.active) {
-      playNextDefinedSegment();
-      return;
-    }
-    if (!audio.paused) {
-      audio.pause();
-      pauseSegBtn.textContent = "▶️ Continue";
-    } else {
-      segmentState.lastPlayAudioTime = audio.currentTime;
-      audio.play();
-      pauseSegBtn.textContent = "⏸ Pause";
-      // monitoring already running after playBtn; ensure it exists
-      startSegmentMonitoring();
-    }
-  });
-
-  // Audio pause: confirm previous candidate and set new candidate
-  audio.addEventListener("pause", () => {
-    const lastPlayAt = segmentState.lastPlayAudioTime;
-    const nowAudioAt = audio.currentTime;
-    let listened = 0;
-    if (typeof lastPlayAt === "number" && !isNaN(lastPlayAt)) {
-      listened = Math.max(0, nowAudioAt - lastPlayAt);
-    }
-
-    // Validate the previous candidate (checkpoint) if we listened long enough since last resume
-    if (listened >= MIN_PLAY_DURATION_IN_SEC && segmentState.candidatePause !== null) {
-      // Confirm previous candidate as a valid rewind point
-      const lastConfirmed = segmentState.pauseHistory.length ? segmentState.pauseHistory[segmentState.pauseHistory.length - 1] : null;
-      if (lastConfirmed === null || Math.abs(lastConfirmed - segmentState.candidatePause) >= 0.05) {
-        segmentState.pauseHistory.push(segmentState.candidatePause);
-        if (segmentState.pauseHistory.length > 100) segmentState.pauseHistory.shift();
-      }
-    }
-
-    // Set current pause as new candidate (unconfirmed until next valid pause/continue)
-    segmentState.candidatePause = nowAudioAt;
-
-    pauseSegBtn.textContent = segmentState.active ? "▶️ Continue" : "▶️ Play Next Segment";
-    rewindBtn.disabled = !(segmentState.active || segmentState.pauseHistory.length > 0);
-  });
-
-  // Audio play: start/resume listening window
-  audio.addEventListener("play", () => {
-    segmentState.lastPlayAudioTime = audio.currentTime;
-    pauseSegBtn.textContent = segmentState.active ? "⏸ Pause" : "▶️ Play Next Segment";
-    rewindBtn.disabled = !(segmentState.active || segmentState.pauseHistory.length > 0);
-    // ensure monitor is running when in active segment
-    if (segmentState.active) startSegmentMonitoring();
-  });
-
-  // Play segment button
-  playBtn.addEventListener("click", async () => {
-    // Starting a new segment resets history and monitoring
-    segmentState.pauseHistory.length = 0;
-    segmentState.candidatePause = null;
-    rewindBtn.disabled = true;
-
-    stopSegmentMonitoring(); // ensures clean start
-
-    const start = startSelect.value ? parseFloat(startSelect.value) : 0;
-    const end = endSelect.value ? parseFloat(endSelect.value) : audio.duration;
-    if (isNaN(start) || isNaN(end) || start >= end) { showToast("⚠️ Invalid segment."); return; }
-
-    segmentState.start = start;
-    segmentState.end = end;
-    segmentState.active = true;
-
-    progressContainer.style.display = "block";
-    progressBar.style.width = "0%";
-    timeLabel.textContent = `${start.toFixed(1)}s / ${end.toFixed(1)}s`;
-    timeLabel.classList.add("visible");
-    pauseSegBtn.textContent = "⏸ Pause";
-
-    try {
-      audio.currentTime = start;
-      await new Promise(r => setTimeout(r, 80));
-      await audio.play();
-    } catch (err) {
-      showToast("❌ Unable to play segment.");
-      stopSegmentMonitoring();
-      return;
-    }
-
-    segmentState.lastPlayAudioTime = audio.currentTime;
-
-    // Start monitoring once
-    startSegmentMonitoring();
-  });
-
-  // Rewind: jump to last confirmed pause, otherwise segment start
-  rewindBtn.onclick = () => {
-    const history = segmentState.pauseHistory;
-    if (!segmentState.active && history.length === 0) {
-      alert("No previous section to rewind to yet.");
-      return;
-    }
-
-    // Decide chosenTime based on whether the last action was a pause
-    let chosenTime = null;
-
-    if (history.length === 0) {
-      chosenTime = segmentState.start;   // fallback to segment start
-    } else if (history.length >= 2) {
-      const last = history[history.length - 1];
-      const prev = history[history.length - 2];
-
-      // If audio is currently paused AND we're sitting at the last pause point,
-      // then step back to the previous pause point
-      if (audio.paused && Math.abs(audio.currentTime - last) < 0.12) {
-        chosenTime = prev !== undefined ? prev : segmentState.start;
-      } else {
-        // Otherwise, go to the last pause point
-        chosenTime = last;
-      }
-    } else {
-      // Only one pause in history
-      chosenTime = history[0];
-    }
-	
-    const inSegment = chosenTime >= segmentState.start && chosenTime <= segmentState.end;
-
-    if (!inSegment) {
-      // Outside segment -> stop monitoring and treat as normal playback
-      stopSegmentMonitoring();
-    }
-
-    audio.currentTime = chosenTime;
-    audio.play();
-
-    if (segmentState.active && inSegment) {
-      // Restore UI if inside segment
-      progressContainer.style.display = "block";
-      timeLabel.classList.add("visible");
-      pauseSegBtn.textContent = "⏸ Pause";
-
-      // Initialize progress bar to the current position within segment
+  
+    // Monitoring: single interval guard to prevent flicker/duplication
+    function startSegmentMonitoring() {
+      if (segmentState.monitorId !== null) return; // already running
       const dur = segmentState.end - segmentState.start;
-      const clamped = Math.max(segmentState.start, Math.min(chosenTime, segmentState.end));
-      const initialPct = dur > 0 ? ((clamped - segmentState.start) / dur) * 100 : 0;
-      progressBar.style.width = `${Math.max(0, Math.min(initialPct, 100))}%`;
-      timeLabel.textContent = `${clamped.toFixed(1)}s / ${segmentState.end.toFixed(1)}s`;
-
-      startSegmentMonitoring(); // guard prevents duplicate intervals
-    } else {
+      segmentState.monitorId = setInterval(() => {
+        const cur = audio.currentTime;
+        if (cur >= segmentState.end) {
+          audio.pause();
+          audio.currentTime = segmentState.end;
+          stopSegmentMonitoring();
+          return;
+        }
+        const pct = ((cur - segmentState.start) / dur) * 100;
+        progressBar.style.width = `${Math.max(0, Math.min(pct, 100))}%`;
+        timeLabel.textContent = `${cur.toFixed(1)}s / ${segmentState.end.toFixed(1)}s`;
+      }, 100);
+    }
+  
+    function stopSegmentMonitoring() {
+      if (segmentState.monitorId !== null) {
+        clearInterval(segmentState.monitorId);
+        segmentState.monitorId = null;
+      }
+      segmentState.active = false;
       progressBar.style.width = "0%";
       timeLabel.classList.remove("visible");
       progressContainer.style.display = "none";
       pauseSegBtn.textContent = "▶️ Play Next Segment";
     }
-
-    rewindBtn.disabled = !(segmentState.active || history.length > 0);
-  };
-
-  // Collapse toggle
-  segListTitle.addEventListener("click", ()=>{
-    segListTitle.classList.toggle("expanded");
-    collapseContent.classList.toggle("show");
-    collapseStates[index] = collapseContent.classList.contains("show");
-  });
-
-  // Assemble card
-  card.append(title, audio, progressContainer, timeLabel, speedGroup, pauseGroup, segListTitle, collapseContent, segmentGroup);
-  container.appendChild(card);
-  cardElements.push(card);
-
-  // Populate select option
-  const opt = document.createElement("option");
-  opt.value = index; opt.textContent = item.name;
-  audioSelect.appendChild(opt);
+  
+    // Segment controls
+    const segmentGroup = document.createElement("div");
+    segmentGroup.className = "segment-group";
+    const playBtn = document.createElement("button");
+    playBtn.textContent = "▶️ Play Segment";
+    const pauseSegBtn = document.createElement("button");
+    pauseSegBtn.textContent = "▶️ Continue";
+    segmentGroup.append(startSelect, endSelect, playBtn, pauseSegBtn, rewindBtn);
+  
+    // Event handlers
+  
+    // Save/Delete segment points
+    saveSegBtn.onclick = ()=> { segmentPoints.push(audio.currentTime); updateSegList(); };
+  
+    uploadBtn.onclick = ()=> {
+      fileInput.value = "";   // Ensure change event always fires
+      fileInput.click();
+    };
+	
+    fileInput.onchange = e=>{
+      const f = e.target.files[0];
+      if (!f) return;
+      // Clear existing points immediately so UI doesn't keep old points if read fails
+      segmentPoints.length = 0;
+      updateSegList();
+  
+      const r = new FileReader();
+      r.onload = ev=>{
+        try {
+          const arr = JSON.parse(ev.target.result);
+          const nums = (Array.isArray(arr) ? arr.map(Number).filter(n=>!isNaN(n)) : []);		  
+          if (nums.length) {
+            segmentPoints.length = 0;
+            segmentPoints.push(...arr.map(Number));
+            updateSegList();
+            showToast("✅ Segment pause points uploaded.");
+          } else {
+		    showToast("⚠️ No valid numbers found.");  //showToast("⚠️ Invalid format.");
+          }
+        } catch { showToast("❌ Failed to parse JSON."); }
+      };
+      r.readAsText(f);
+    };
+  
+    downloadBtn.onclick = ()=>{
+      const blob = new Blob([JSON.stringify(segmentPoints,null,2)],{type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = `${item.name}-segment-points.json`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    };
+  
+    // Auto-adjust start/end select ordering
+    startSelect.addEventListener("change", () => {
+      const startVal = parseFloat(startSelect.value);
+      const endVal = parseFloat(endSelect.value);
+      if (!isNaN(startVal) && !isNaN(endVal) && endVal <= startVal) {
+        const nextHigher = segmentPoints.find(pt => pt > startVal);
+        endSelect.value = nextHigher !== undefined ? String(nextHigher) : "";
+      }
+    });
+  
+    endSelect.addEventListener("change", () => {
+      const startVal = parseFloat(startSelect.value);
+      const endVal = parseFloat(endSelect.value);
+      if (!isNaN(startVal) && !isNaN(endVal) && endVal <= startVal) {
+        const reversed = [...segmentPoints].reverse();
+        const prevLower = reversed.find(pt => pt < endVal);
+        startSelect.value = prevLower !== undefined ? String(prevLower) : "";
+      }
+    });
+  
+    // Play next defined segment convenience
+    function playNextDefinedSegment() {
+      // require at least one defined segment
+      if (!segmentPoints.length) { 
+        showToast("⚠️ No segment points defined."); 
+        return; 
+      }
+  
+      segmentPoints.sort((a,b)=>a-b);
+  
+      let startPt, endPt;
+  
+      if (segmentState.end < audio.duration) {
+        // Already in a segment and not at the end of audio
+        startPt = segmentState.end;
+  
+        // Find the next defined segment point strictly greater than current end
+        const nextIdx = segmentPoints.findIndex(pt => pt > segmentState.end);
+        if (nextIdx !== -1) {
+          endPt = segmentPoints[nextIdx];
+        } else {
+          // No more defined points, use audio end
+          endPt = audio.duration;
+        }
+      } else {
+        // Fresh start: behave as before
+        const ref = startSelect.value ? parseFloat(startSelect.value) : (audio.currentTime || 0);
+        let nextIdx = segmentPoints.findIndex(pt => pt > ref);
+        if (nextIdx === -1) nextIdx = 0;
+  
+        endPt = segmentPoints[nextIdx];
+        startPt = nextIdx > 0 ? Math.max(segmentPoints[nextIdx - 1]-0.12,0) : 0;
+      }
+  
+      // Update selects
+      startSelect.value = startPt ? String(startPt) : "";
+      endSelect.value = String(endPt);
+  
+      // Trigger the existing play logic
+      playBtn.click();
+    }
+  
+    // Pause/Continue button
+    pauseSegBtn.addEventListener("click", () => {
+      if (!segmentState.active) {
+        playNextDefinedSegment();
+        return;
+      }
+      if (!audio.paused) {
+        audio.pause();
+        pauseSegBtn.textContent = "▶️ Continue";
+      } else {
+        segmentState.lastPlayAudioTime = audio.currentTime;
+        audio.play();
+        pauseSegBtn.textContent = "⏸ Pause";
+        // monitoring already running after playBtn; ensure it exists
+        startSegmentMonitoring();
+      }
+    });
+  
+    // Audio pause: confirm previous candidate and set new candidate
+    audio.addEventListener("pause", () => {
+      const lastPlayAt = segmentState.lastPlayAudioTime;
+      const nowAudioAt = audio.currentTime;
+      let listened = 0;
+      if (typeof lastPlayAt === "number" && !isNaN(lastPlayAt)) {
+        listened = Math.max(0, nowAudioAt - lastPlayAt);
+      }
+  
+      // Validate the previous candidate (checkpoint) if we listened long enough since last resume
+      if (listened >= MIN_PLAY_DURATION_IN_SEC && segmentState.candidatePause !== null) {
+        // Confirm previous candidate as a valid rewind point
+        const lastConfirmed = segmentState.pauseHistory.length ? segmentState.pauseHistory[segmentState.pauseHistory.length - 1] : null;
+        if (lastConfirmed === null || Math.abs(lastConfirmed - segmentState.candidatePause) >= 0.05) {
+          segmentState.pauseHistory.push(segmentState.candidatePause);
+          if (segmentState.pauseHistory.length > 100) segmentState.pauseHistory.shift();
+        }
+      }
+  
+      // Set current pause as new candidate (unconfirmed until next valid pause/continue)
+      segmentState.candidatePause = nowAudioAt;
+  
+      pauseSegBtn.textContent = segmentState.active ? "▶️ Continue" : "▶️ Play Next Segment";
+      rewindBtn.disabled = !(segmentState.active || segmentState.pauseHistory.length > 0);
+    });
+  
+    // Audio play: start/resume listening window
+    audio.addEventListener("play", () => {
+      segmentState.lastPlayAudioTime = audio.currentTime;
+      pauseSegBtn.textContent = segmentState.active ? "⏸ Pause" : "▶️ Play Next Segment";
+      rewindBtn.disabled = !(segmentState.active || segmentState.pauseHistory.length > 0);
+      // ensure monitor is running when in active segment
+      if (segmentState.active) startSegmentMonitoring();
+    });
+  
+    // Play segment button
+    playBtn.addEventListener("click", async () => {
+      // Starting a new segment resets history and monitoring
+      segmentState.pauseHistory.length = 0;
+      segmentState.candidatePause = null;
+      rewindBtn.disabled = true;
+  
+      stopSegmentMonitoring(); // ensures clean start
+  
+      const start = startSelect.value ? parseFloat(startSelect.value) : 0;
+      const end = endSelect.value ? parseFloat(endSelect.value) : audio.duration;
+      if (isNaN(start) || isNaN(end) || start >= end) { showToast("⚠️ Invalid segment."); return; }
+  
+      segmentState.start = start;
+      segmentState.end = end;
+      segmentState.active = true;
+  
+      progressContainer.style.display = "block";
+      progressBar.style.width = "0%";
+      timeLabel.textContent = `${start.toFixed(1)}s / ${end.toFixed(1)}s`;
+      timeLabel.classList.add("visible");
+      pauseSegBtn.textContent = "⏸ Pause";
+  
+      try {
+        audio.currentTime = start;
+        await new Promise(r => setTimeout(r, 80));
+        await audio.play();
+      } catch (err) {
+        showToast("❌ Unable to play segment.");
+        stopSegmentMonitoring();
+        return;
+      }
+  
+      segmentState.lastPlayAudioTime = audio.currentTime;
+  
+      // Start monitoring once
+      startSegmentMonitoring();
+    });
+  
+    // Rewind: jump to last confirmed pause, otherwise segment start
+    rewindBtn.onclick = () => {
+      const history = segmentState.pauseHistory;
+      if (!segmentState.active && history.length === 0) {
+        alert("No previous section to rewind to yet.");
+        return;
+      }
+  
+      // Decide chosenTime based on whether the last action was a pause
+      let chosenTime = null;
+  
+      if (history.length === 0) {
+        chosenTime = segmentState.start;   // fallback to segment start
+      } else if (history.length >= 2) {
+        const last = history[history.length - 1];
+        const prev = history[history.length - 2];
+  
+        // If audio is currently paused AND we're sitting at the last pause point,
+        // then step back to the previous pause point
+        if (audio.paused && Math.abs(audio.currentTime - last) < 0.12) {
+          chosenTime = prev !== undefined ? prev : segmentState.start;
+        } else {
+          // Otherwise, go to the last pause point
+          chosenTime = last;
+        }
+      } else {
+        // Only one pause in history
+        chosenTime = history[0];
+      }
+  	
+      const inSegment = chosenTime >= segmentState.start && chosenTime <= segmentState.end;
+  
+      if (!inSegment) {
+        // Outside segment -> stop monitoring and treat as normal playback
+        stopSegmentMonitoring();
+      }
+  
+      audio.currentTime = chosenTime;
+      audio.play();
+  
+      if (segmentState.active && inSegment) {
+        // Restore UI if inside segment
+        progressContainer.style.display = "block";
+        timeLabel.classList.add("visible");
+        pauseSegBtn.textContent = "⏸ Pause";
+  
+        // Initialize progress bar to the current position within segment
+        const dur = segmentState.end - segmentState.start;
+        const clamped = Math.max(segmentState.start, Math.min(chosenTime, segmentState.end));
+        const initialPct = dur > 0 ? ((clamped - segmentState.start) / dur) * 100 : 0;
+        progressBar.style.width = `${Math.max(0, Math.min(initialPct, 100))}%`;
+        timeLabel.textContent = `${clamped.toFixed(1)}s / ${segmentState.end.toFixed(1)}s`;
+  
+        startSegmentMonitoring(); // guard prevents duplicate intervals
+      } else {
+        progressBar.style.width = "0%";
+        timeLabel.classList.remove("visible");
+        progressContainer.style.display = "none";
+        pauseSegBtn.textContent = "▶️ Play Next Segment";
+      }
+  
+      rewindBtn.disabled = !(segmentState.active || history.length > 0);
+    };
+  
+    // Collapse toggle
+    segListTitle.addEventListener("click", ()=>{
+      segListTitle.classList.toggle("expanded");
+      collapseContent.classList.toggle("show");
+      collapseStates[index] = collapseContent.classList.contains("show");
+    });
+  
+    // Assemble card
+    card.append(title, audio, progressContainer, timeLabel, speedGroup, pauseGroup, segListTitle, collapseContent, segmentGroup);
+    container.appendChild(card);
+    cardElements.push(card);
+  
+    // Populate select option
+    const opt = document.createElement("option");
+    opt.value = index; opt.textContent = item.name;
+    audioSelect.appendChild(opt);
+  } catch (err) {
+    console.error('Error creating card', index, item.name, err);
+    // create a simple placeholder card so missing options are obvious
+    const placeholder = document.createElement('div');
+    placeholder.className = 'audio-card';
+    placeholder.textContent = `Failed to create card ${index} ${item.name}`;
+    container.appendChild(placeholder);
+    const opt = document.createElement('option');
+    opt.value = index;
+    opt.textContent = item.name + ' (error)';
+    audioSelect.appendChild(opt);
+  }
+ 
 });
 
 // Default view: last item if any, else show all
@@ -564,4 +593,3 @@ audioSelect.addEventListener("change", updateCardsVisibility);
 
 </body>
 </html>
-
