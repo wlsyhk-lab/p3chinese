@@ -225,6 +225,7 @@
       { groupId: 301, description: "成語單元一" },
       { groupId: 312, description: "上2.學寫毛筆字" },
       { groupId: 310, description: "自學1.藍色的樹葉" },
+      { groupId: 315, description: "上5.我們都是六號(上)" },
       { groupId: 304, description: "成語單元四" },
       { groupId: 303, description: "成語單元三" },
       { groupId: 302, description: "成語單元二" },
@@ -303,6 +304,29 @@
       { id: "千絲萬縷", groupId: 301, soundPath: "千絲萬縷.mp3", inputPinyin: "qia1n si1 wa4n lv3", pinyin: "qiān sī wàn lǚ" },
       { id: "一絲不苟", groupId: 301, soundPath: "一絲不苟.mp3", inputPinyin: "yi4 si1 bu4 go3u", pinyin: "yì sī bù gǒu" },
       { id: "五光十色", groupId: 301, soundPath: "五光十色.mp3", inputPinyin: "wu3 gua1ng shi2 se4", pinyin: "wǔ guāng shí sè" },
+      // 我們都是六號(上)
+      { id: "惟一", groupId: 315, soundPath: "惟一.mp3", inputPinyin: "we2i yi1", pinyin: "wéi yī" },
+      { id: "收集", groupId: 315, soundPath: "收集.mp3", inputPinyin: "sho1u ji2", pinyin: "shōu jí" },
+      { id: "拆開", groupId: 315, soundPath: "拆開.mp3", inputPinyin: "cha1i ka1i", pinyin: "chāi kāi" },
+      { id: "包裹", groupId: 315, soundPath: "包裹.mp3", inputPinyin: "ba1n guo3", pinyin: "bān guǒ" },
+      { id: "特產", groupId: 315, soundPath: "特產.mp3", inputPinyin: "te4 cha3n", pinyin: "tè chǎn" },
+      { id: "回報", groupId: 315, soundPath: "回報.mp3", inputPinyin: "hui2 ba4o", pinyin: "huí bào" },
+      { id: "貝殼", groupId: 315, soundPath: "貝殼.mp3", inputPinyin: "be4i ke2", pinyin: "bèi ké" },
+      { id: "熱情", groupId: 315, soundPath: "熱情.mp3", inputPinyin: "re4 qi2ng", pinyin: "rè qíng" },
+      { id: "編織", groupId: 315, soundPath: "編織.mp3", inputPinyin: "bia1n zhi1", pinyin: "biān zhī" },
+      { id: "書簽", groupId: 315, soundPath: "書簽.mp3", inputPinyin: "shu1 qia1n", pinyin: "shū qiān" },
+      { id: "具名", groupId: 315, soundPath: "具名.mp3", inputPinyin: "ju4 mi2ng", pinyin: "jù míng" },
+      { id: "夾", groupId: 315, soundPath: "夾.mp3", inputPinyin: "jia2", pinyin: "jiá" },
+      { id: "老鷹", groupId: 315, soundPath: "老鷹.mp3", inputPinyin: "la3o yi1ng", pinyin: "lǎo yīng" },
+      { id: "羽毛", groupId: 315, soundPath: "羽毛.mp3", inputPinyin: "yu3 ma2o", pinyin: "yǔ máo" },
+      { id: "捐", groupId: 315, soundPath: "捐.mp3", inputPinyin: "jua1n", pinyin: "juān" },
+      { id: "活動", groupId: 315, soundPath: "活動.mp3", inputPinyin: "huo2 do4ng", pinyin: "huó dòng" },
+      { id: "參加", groupId: 315, soundPath: "參加.mp3", inputPinyin: "ca1n jia1", pinyin: "cān jiā" },
+      { id: "希望", groupId: 315, soundPath: "希望.mp3", inputPinyin: "xi1 wa4ng", pinyin: "xī wàng" },
+      { id: "認識", groupId: 315, soundPath: "認識.mp3", inputPinyin: "re4n shi5", pinyin: "rèn shi" },
+      { id: "直接", groupId: 315, soundPath: "直接.mp3", inputPinyin: "zhi2 jie1", pinyin: "zhí jiē" },
+      { id: "寄", groupId: 315, soundPath: "寄.mp3", inputPinyin: "ji4", pinyin: "jì" },
+      { id: "立刻", groupId: 315, soundPath: "立刻.mp3", inputPinyin: "li4 ke4", pinyin: "lì kè" },  
       // 成語單元四
       { id: "畏首畏尾", groupId: 304, soundPath: "畏首畏尾.mp3", inputPinyin: "we4i sho3u we4i we3i", pinyin: "wèi shǒu wèi wěi" },
       { id: "口若懸河", groupId: 304, soundPath: "口若懸河.mp3", inputPinyin: "ko3u ruo4 xua2n he2", pinyin: "kǒu ruò xuán hé" },
@@ -403,6 +427,24 @@
       TIME: 4,
       CHECKBOX: 5,
       PINYIN: 6
+    };
+
+    const CookieUtils = {
+      set(name, value, days = 365) {
+        const expires = new Date(Date.now() + days*24*60*60*1000).toUTCString();
+        console.log("Cookie changed to:", `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`);
+
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+      },
+
+      get(name) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+      },
+
+      delete(name) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+      }
     };
 
     // Function to format time as MM:SS
@@ -553,38 +595,72 @@
       }
     }
 
+    // Function to select the last option by default
+    function selectLastOption(selectEl) {
+      if (selectEl && selectEl.options.length > 0) {
+        selectEl.selectedIndex = selectEl.options.length - 1;
+      }
+    }
+
+    const GroupSelectionManager = {
+      init(selectElementId, cookieKey, defaultSelectorFn) {
+        const selectEl = document.getElementById(selectElementId);
+        if (!selectEl) return;
+
+        // Populate dropdown
+        groupDetails.forEach(group => {
+          const option = document.createElement("option");
+          option.value = group.groupId;
+          option.textContent = group.description;
+          selectEl.appendChild(option);
+        });
+
+    // Load saved selection
+        const savedValue = CookieUtils.get(cookieKey);
+        if (savedValue) {
+          selectEl.value = savedValue;
+        } else {
+          defaultSelectorFn(selectEl);
+        }
+
+        // Save on change
+        selectEl.addEventListener("change", () => {
+          console.log("Group selection changed to:", selectEl.value);
+          CookieUtils.set(cookieKey, selectEl.value);
+        });
+      },
+
+      reset(selectElementId, cookieKey, defaultSelectorFn) {
+        CookieUtils.delete(cookieKey);
+        const selectEl = document.getElementById(selectElementId);
+        if (selectEl) defaultSelectorFn(selectEl);
+      }
+    };
+
     // Initialize table on page load
-    window.onload = () => {
-      const groupSelect = document.getElementById("groupSelect");
-      // Populate the dropdown with group descriptions
-      groupDetails.forEach(group => {
-        const option = document.createElement("option");
-        option.value = group.groupId;
-        option.textContent = group.description;
-        groupSelect.appendChild(option);
-      });
+    document.addEventListener('DOMContentLoaded', function () {
+      // Initialize group selection
+      GroupSelectionManager.init("groupSelect", "selectedGroupId", selectLastOption);
 
-      selectLastOption(); // Select the last option by default
+      // Reset button
+      const resetBtn = document.getElementById("resetSelectionButton");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          GroupSelectionManager.reset("groupSelect", "selectedGroupId", selectLastOption);
+        });
+      }
 
-      // Set the button label initially
+      // Other initializations...
       const toggleButton = document.getElementById("toggleGroupSelectButton");
-      toggleButton.textContent = "課題全選"; // Initial label
+      if (toggleButton) toggleButton.textContent = "課題全選";
 
-      // Add event listeners for file input sync
       const input1 = document.getElementById('fileToSaveRevisionItems1');
       const input2 = document.getElementById('fileToSaveRevisionItems2');
-      
-      if (input1) {
-        input1.addEventListener('input', () => syncFileInputs('fileToSaveRevisionItems1', 'fileToSaveRevisionItems2'));
-      }
-      
-      if (input2) {
-        input2.addEventListener('input', () => syncFileInputs('fileToSaveRevisionItems2', 'fileToSaveRevisionItems1'));
-      }
+      if (input1) input1.addEventListener('input', () => syncFileInputs('fileToSaveRevisionItems1', 'fileToSaveRevisionItems2'));
+      if (input2) input2.addEventListener('input', () => syncFileInputs('fileToSaveRevisionItems2', 'fileToSaveRevisionItems1'));
 
-      // Initialize pause button state
       updatePauseButton();
-    };
+    });
 
     // Function to handle file operations with error handling and loading indicators
     function handleFileOperation(operation, params = {}) {
@@ -1371,13 +1447,6 @@
       return result;
     }
 
-    // Function to select the last option by default
-    function selectLastOption() {
-      const groupSelect = document.getElementById("groupSelect");
-      const lastOption = groupSelect.options[groupSelect.options.length - 1];
-      lastOption.selected = true; // Mark the last option as selected
-    }
-
     document.addEventListener('keydown', (e) => {
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -1442,6 +1511,7 @@
   <div>
     <label for="groupSelect">課題選擇(可多選):</label><br/>
     <select id="groupSelect" multiple></select>
+    <button id="resetSelectionButton">重設選擇</button>
   </div>
 
   <div>
