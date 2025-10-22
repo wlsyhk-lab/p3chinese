@@ -237,7 +237,7 @@
     ];
 
     // List of items with each id as a Chinese word for inputting the corresponding pinyin.
-    const itemSoundBaseURL = "file:///F:/yangre/Willanson/St%20Paul%27s%20Co-ed/P3/%E4%B8%AD%E6%96%87/mp3/";
+    const itemSoundBaseURL = "mp3/";
     const items = [
       //藍色的樹葉
       { id: "麗麗", groupId: 310, soundPath: "麗麗.mp3", inputPinyin: "li4 li4", pinyin: "lì lì" },
@@ -790,13 +790,15 @@
     }
 
     // Function to create an audio cell
+	/*
     function setAudioSource(item) {
       const audio = document.createElement("audio");
       audio.controls = true;
       
       // Add ARIA label for accessibility
       audio.setAttribute('aria-label', `Audio for ${item.id}`);
-      
+      audio.preload = "none"; // avoid aggressive preloading on page load
+
       const mp3Folder = "mp3/";
       const mp3File = mp3Folder + item.id + ".mp3";
       
@@ -814,7 +816,51 @@
       
       return audio;
     }
+    */
+	function setAudioSource(item) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.setAttribute('aria-label', `Audio for ${item.id}`);
+      audio.preload = "none"; // avoid aggressive preloading on page load
 
+      // Build the filename to request from the site
+      // Prefer item.soundPath if it already contains the filename, otherwise fall back to item.id + ".mp3"
+      const filename = item.soundPath && item.soundPath.trim() !== "" ? item.soundPath : `${item.id}.mp3`;
+
+      // Ensure proper URL encoding for spaces and special chars
+      const safeFilename = encodeURIComponent(filename).replace(/%2F/g, "/"); // keep any forward slashes intact
+      const srcUrl = itemSoundBaseURL.endsWith("/") ? itemSoundBaseURL + safeFilename : itemSoundBaseURL + "/" + safeFilename;
+
+      // Create source element and attach
+      const source = document.createElement("source");
+      source.src = srcUrl;
+      source.type = "audio/mpeg";
+      audio.appendChild(source);
+
+      // Optional: if you host audio cross-origin and expect CORS headers on the server, uncomment:
+      // audio.crossOrigin = "anonymous";
+
+      // Error handling: log network errors and show a simple inline indicator
+      audio.addEventListener("error", (ev) => {
+        console.error(`Audio failed to load for ${item.id}: ${srcUrl}`, ev);
+        // show a small disabled message inside the audio container
+        const fallback = document.createElement("div");
+        fallback.style.color = "#b00";
+        fallback.style.fontSize = "0.9em";
+        fallback.textContent = "音訊載入失敗";
+        // replace controls with the fallback message
+        audio.replaceWith(fallback);
+      });
+
+      // When it loads, log for debugging
+      audio.addEventListener("loadeddata", () => {
+        console.log(`Audio loaded for ${item.id}: ${srcUrl}`);
+      });
+
+      return audio;
+    }
+
+	
     // Shared logic for formatting text with highlights for 聲母
     function formatTextWithHighlights(text) {
       let result = "";
