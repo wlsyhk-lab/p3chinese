@@ -789,77 +789,107 @@
       }
     }
 
+    // --- Audio load helpers: build candidate URLs and retry load with backoff ---
+    function buildAudioCandidates(originalPath) {
+      try {
+        const asIs = originalPath;
+        const encodedFull = encodeURI(originalPath);
+        const lastSlash = originalPath.lastIndexOf("/");
+        if (lastSlash !== -1) {
+          const dir = originalPath.slice(0, lastSlash + 1);
+          const filename = originalPath.slice(lastSlash + 1);
+          const encodedFilename = encodeURIComponent(filename);
+          const encodedFilePath = dir + encodedFilename;
+          return [asIs, encodedFull, encodedFilePath];
+        }
+        return [asIs, encodedFull, encodeURIComponent(originalPath)];
+      } catch (e) {
+        return [originalPath, encodeURI(originalPath)];
+      }
+    }
+
+    function tryAttachSourceWithRetries(audioElem, sourceElem, originalPath, itemLabel = "audio", maxAttempts = 5) {
+      const candidates = buildAudioCandidates(originalPath);
+      let attempt = 0;
+    
+      return new Promise(async (resolve) => {
+        while (attempt < maxAttempts) {
+          const candidate = candidates[attempt % candidates.length];
+          sourceElem.src = candidate;
+          sourceElem.type = "audio/mpeg";
+          try { audioElem.load(); } catch (e) {}
+    
+          const ok = await new Promise(res => {
+            let done = false;
+            const onCan = () => { if (!done) { done = true; cleanup(); res(true); } };
+            const onErr = () => { if (!done) { done = true; cleanup(); res(false); } };
+            function cleanup() {
+              audioElem.removeEventListener("canplaythrough", onCan);
+              audioElem.removeEventListener("error", onErr);
+            }
+            audioElem.addEventListener("canplaythrough", onCan, { once: true });
+            audioElem.addEventListener("error", onErr, { once: true });
+            // safety timeout
+            setTimeout(() => { if (!done) { done = true; cleanup(); res(false); } }, 3500);
+          });
+    
+          if (ok) {
+            resolve({ ok: true, url: candidate, attempts: attempt + 1 });
+            return;
+          }
+    
+          attempt++;
+          await new Promise(r => setTimeout(r, 250 * Math.pow(2, attempt))); // exponential backoff
+        }
+    
+        resolve({ ok: false, tried: candidates.slice(0, Math.min(candidates.length, maxAttempts)) });
+      });
+    }
+    
     // Function to create an audio cell
-	/*
     function setAudioSource(item) {
       const audio = document.createElement("audio");
       audio.controls = true;
-      
-      // Add ARIA label for accessibility
       audio.setAttribute('aria-label', `Audio for ${item.id}`);
-      audio.preload = "none"; // avoid aggressive preloading on page load
-
-      const mp3Folder = "mp3/";
-      const mp3File = mp3Folder + item.id + ".mp3";
-      
-      // Set source and error handling
-      audio.src = mp3File;
-      
-      audio.onerror = () => {
-        console.log(`Local file not found for ${item.id}, using remote source`);
-        audio.src = /^(https?|file):\/\//.test(item.soundPath)?item.soundPath:itemSoundBaseURL+item.soundPath;
-      };
-
-      audio.onloadeddata = () => {
-        console.log(`Using local file for ${item.id}`);
-      };  
-      
-      return audio;
-    }
-    */
-	function setAudioSource(item) {
-      const audio = document.createElement("audio");
-      audio.controls = true;
-      audio.setAttribute('aria-label', `Audio for ${item.id}`);
-      audio.preload = "none"; // avoid aggressive preloading on page load
-
-      // Build the filename to request from the site
-      // Prefer item.soundPath if it already contains the filename, otherwise fall back to item.id + ".mp3"
-      const filename = item.soundPath && item.soundPath.trim() !== "" ? item.soundPath : `${item.id}.mp3`;
-
-      // Ensure proper URL encoding for spaces and special chars
-      const safeFilename = encodeURIComponent(filename).replace(/%2F/g, "/"); // keep any forward slashes intact
-      const srcUrl = itemSoundBaseURL.endsWith("/") ? itemSoundBaseURL + safeFilename : itemSoundBaseURL + "/" + safeFilename;
-
-      // Create source element and attach
-      const source = document.createElement("source");
-      source.src = srcUrl;
-      source.type = "audio/mpeg";
-      audio.appendChild(source);
-
-      // Optional: if you host audio cross-origin and expect CORS headers on the server, uncomment:
-      // audio.crossOrigin = "anonymous";
-
-      // Error handling: log network errors and show a simple inline indicator
+      audio.preload = "none";
+    
+      // Resolve filename: prefer item.soundPath if provided
+      const filename = (item.soundPath && item.soundPath.trim()) ? item.soundPath.trim() : `${item.id}.mp3`;
+      // Build base URL and safe path
+      const base = itemSoundBaseURL.endsWith("/") ? itemSoundBaseURL : itemSoundBaseURL + "/";
+      // We will try multiple encodings, do not blindly encode slashes
+      const sourceElem = document.createElement("source");
+      sourceElem.type = "audio/mpeg";
+      audio.appendChild(sourceElem);
+    
+      // Attach retry loader
+      tryAttachSourceWithRetries(audio, sourceElem, base + filename, item.id, 5).then(result => {
+        if (!result.ok) {
+          console.error(`Audio failed for ${item.id}; tried:`, result.tried);
+          const fallback = document.createElement("div");
+          fallback.style.color = "#b00";
+          fallback.style.fontSize = "0.9em";
+          fallback.textContent = "音訊載入失敗";
+          audio.replaceWith(fallback);
+        } else {
+          sourceElem.src = result.url;
+          try { audio.load(); } catch(e) {}
+          console.log(`Audio loaded for ${item.id}: ${result.url}`);
+        }
+      });
+    
+      // Expose errors for debugging (keeps console info)
       audio.addEventListener("error", (ev) => {
-        console.error(`Audio failed to load for ${item.id}: ${srcUrl}`, ev);
-        // show a small disabled message inside the audio container
-        const fallback = document.createElement("div");
-        fallback.style.color = "#b00";
-        fallback.style.fontSize = "0.9em";
-        fallback.textContent = "音訊載入失敗";
-        // replace controls with the fallback message
-        audio.replaceWith(fallback);
+        console.warn(`Audio element reported error for ${item.id}`, ev);
       });
-
-      // When it loads, log for debugging
+    
       audio.addEventListener("loadeddata", () => {
-        console.log(`Audio loaded for ${item.id}: ${srcUrl}`);
+        console.log(`Audio loaded (event) for ${item.id}: ${audio.currentSrc}`);
       });
-
+    
       return audio;
     }
-
+    
 	
     // Shared logic for formatting text with highlights for 聲母
     function formatTextWithHighlights(text) {
