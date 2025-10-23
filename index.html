@@ -662,9 +662,11 @@
             else defaultSelectorFn(selectEl);
           }
         } else {
-          defaultSelectorFn(selectEl);
+          // If defaultSelectorFn is a function and not a no-op, call it; otherwise leave all unselected
+          if (typeof defaultSelectorFn === 'function' && defaultSelectorFn.toString().replace(/\s/g,'') !== '()=>{}') {
+            defaultSelectorFn(selectEl);
+          }
         }
-
         // Save on change: persist all selected option values as a JSON array string
         selectEl.addEventListener("change", () => {
           const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
@@ -687,7 +689,7 @@
     // Initialize table on page load
     document.addEventListener('DOMContentLoaded', function () {
       // Initialize group selection
-      GroupSelectionManager.init("groupSelect", "selectedGroupId", selectLastOption);
+      GroupSelectionManager.init("groupSelect", "selectedGroupId", null);
 
       // Reset button
       const resetBtn = document.getElementById("resetSelectionButton");
