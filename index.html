@@ -627,32 +627,60 @@
         if (!selectEl) return;
 
         // Populate dropdown
+        selectEl.innerHTML = ""; // ensure clean start
         groupDetails.forEach(group => {
           const option = document.createElement("option");
-          option.value = group.groupId;
+          option.value = String(group.groupId);
           option.textContent = group.description;
           selectEl.appendChild(option);
         });
 
-    // Load saved selection
+        // Restore saved selection (support both new JSON-array format and old scalar format)
         const savedValue = CookieUtils.get(cookieKey);
         if (savedValue) {
-          selectEl.value = savedValue;
+          try {
+            const parsed = JSON.parse(savedValue);
+            if (Array.isArray(parsed)) {
+              // JSON array stored previously
+              const allowed = new Set(Array.from(selectEl.options).map(o => o.value));
+              parsed.forEach(val => {
+                if (allowed.has(String(val))) {
+                  const opt = selectEl.querySelector(`option[value="${String(val)}"]`);
+                  if (opt) opt.selected = true;
+                }
+              });
+            } else {
+              // Not an array: treat as legacy scalar string
+              const opt = selectEl.querySelector(`option[value="${String(parsed)}"]`);
+              if (opt) opt.selected = true;
+              else defaultSelectorFn(selectEl);
+            }
+          } catch (e) {
+            // Not JSON: treat as single value string
+            const opt = selectEl.querySelector(`option[value="${savedValue}"]`);
+            if (opt) opt.selected = true;
+            else defaultSelectorFn(selectEl);
+          }
         } else {
           defaultSelectorFn(selectEl);
         }
 
-        // Save on change
+        // Save on change: persist all selected option values as a JSON array string
         selectEl.addEventListener("change", () => {
-          console.log("Group selection changed to:", selectEl.value);
-          CookieUtils.set(cookieKey, selectEl.value);
+          const selected = Array.from(selectEl.selectedOptions).map(o => o.value);
+          CookieUtils.set(cookieKey, JSON.stringify(selected));
+          console.log("Group selection changed and saved:", selected);
         });
       },
 
       reset(selectElementId, cookieKey, defaultSelectorFn) {
         CookieUtils.delete(cookieKey);
         const selectEl = document.getElementById(selectElementId);
-        if (selectEl) defaultSelectorFn(selectEl);
+        if (selectEl) {
+          // Clear selection then apply default
+          Array.from(selectEl.options).forEach(opt => opt.selected = false);
+          defaultSelectorFn(selectEl);
+        }
       }
     };
 
