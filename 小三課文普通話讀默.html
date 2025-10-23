@@ -71,7 +71,7 @@
 </style>
 </head>
 <body>
-<p>轉往: <a href="index.html">小三字詞拼音默書</a></p>
+<p>轉往: <a href="小三字詞拼音默書.html">小三字詞拼音默書</a></p>
 <h1>課文普通話讀默</h1>
 
 <div class="audio-select-bar">
@@ -101,11 +101,91 @@ let collapseStates = Array.from({ length: audioList.length }, () => false);
 const cardElements = [];
 
 // Helpers
+
+// --- audio source load helpers ---
 function showToast(message) {
   toast.textContent = message;
   toast.style.opacity = "1";
   setTimeout(() => (toast.style.opacity = "0"), 3000);
 }
+
+function buildEncodedPaths(originalPath) {
+  // Return candidate URLs in preferred order to try
+  // Candidate 1: original as-is (sometimes works)
+  // Candidate 2: encodeURI on the whole path
+  // Candidate 3: encodeURIComponent only the filename portion (keeps directories)
+  try {
+    const url = originalPath;
+    const encodedFull = encodeURI(originalPath);
+
+    // If it contains a slash, try encoding only the filename portion
+    const lastSlash = originalPath.lastIndexOf("/");
+    if (lastSlash !== -1) {
+      const dir = originalPath.slice(0, lastSlash + 1);
+      const filename = originalPath.slice(lastSlash + 1);
+      const encodedFilename = encodeURIComponent(filename);
+      const encodedFilePath = dir + encodedFilename;
+      return [url, encodedFull, encodedFilePath];
+    }
+    // no slash: treat the whole string as filename
+    return [url, encodedFull, encodeURIComponent(originalPath)];
+  } catch (e) {
+    return [originalPath, encodeURI(originalPath)];
+  }
+}
+
+async function tryLoadSourceWithRetries(sourceElem, audioElem, itemUrl, itemName, maxAttempts = 4) {
+  const candidates = buildEncodedPaths(itemUrl);
+  let attempt = 0;
+
+  // Try each candidate multiple times with exponential backoff until one succeeds or we exhaust attempts
+  while (attempt < maxAttempts) {
+    const candidateIndex = attempt % candidates.length;
+    const candidateUrl = candidates[candidateIndex];
+
+    sourceElem.src = candidateUrl;
+    sourceElem.type = "audio/mpeg";
+
+    // Force audio to reload its sources
+    try {
+      audioElem.load();
+    } catch (err) {
+      console.error("audio.load() error", err);
+    }
+
+    // Wait briefly for the browser to try fetching; use canplaythrough or error events
+    const success = await new Promise(resolve => {
+      let resolved = false;
+      const onCan = () => { if (!resolved) { resolved = true; cleanup(); resolve(true); } };
+      const onErr = () => { if (!resolved) { resolved = true; cleanup(); resolve(false); } };
+
+      function cleanup() {
+        audioElem.removeEventListener("canplaythrough", onCan);
+        audioElem.removeEventListener("error", onErr);
+      }
+
+      audioElem.addEventListener("canplaythrough", onCan);
+      audioElem.addEventListener("error", onErr);
+
+      // Safety timeout in case events don't fire
+      setTimeout(() => { if (!resolved) { resolved = true; cleanup(); resolve(false); } }, 3500);
+    });
+
+    if (success) {
+      console.log(`Audio loaded: ${itemName} => ${candidateUrl} (attempt ${attempt + 1})`);
+      return { ok: true, url: candidateUrl };
+    }
+
+    console.warn(`Audio load failed for ${itemName} at ${candidateUrl} (attempt ${attempt + 1})`);
+    attempt++;
+    // Exponential backoff before next attempt
+    await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt)));
+  }
+
+  // All attempts failed
+  return { ok: false, url: null, tried: candidates };
+}
+
 
 function updateCardsVisibility() {
   const selectedValue = audioSelect.value;
@@ -150,11 +230,32 @@ audioList.forEach((item, index) => {
   
     const audio = document.createElement("audio");
     audio.controls = true;
+    // Create <source> element but do not set src immediately
     const src = document.createElement("source");
-    src.src = item.url;
     src.type = "audio/mpeg";
     audio.appendChild(src);
-  
+    
+    // Try loading with retries and encoded alternatives
+    tryLoadSourceWithRetries(src, audio, item.url, item.name, 5).then(result => {
+      if (!result.ok) {
+        // All attempts failed: show toast and log details
+        showToast(`❌ 無法載入音檔: ${item.name}`);
+        console.error(`Failed to load audio for ${item.name}; tried encodings:`, result.tried);
+        // Optionally mark the card visually
+        const failedNote = document.createElement("div");
+        failedNote.style.color = "#b00020";
+        failedNote.style.fontSize = "0.9em";
+        failedNote.textContent = "Audio failed to load (checked URL encodings).";
+        // append after the audio control
+        audio.parentNode && audio.parentNode.insertBefore(failedNote, audio.nextSibling);
+      } else {
+        // success: ensure UI state and attributes use the winning URL
+        src.src = result.url;
+        // do one final load to ensure canonical URL is set
+        try { audio.load(); } catch(e) {}
+      }
+    });
+      
     const progressContainer = document.createElement("div");
     progressContainer.className = "segment-progress";
     const progressBar = document.createElement("div");
